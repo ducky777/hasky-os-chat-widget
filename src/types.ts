@@ -129,6 +129,10 @@ export interface ChatModalProps {
   // Session configuration
   /** Storage key prefix for localStorage */
   storageKeyPrefix?: string;
+
+  // Booking configuration
+  /** Calendar booking feature configuration */
+  booking?: BookingConfig;
 }
 
 /**
@@ -194,4 +198,51 @@ export interface UseChatReturn {
   startNewChat: () => void;
   clearMessages: () => void;
   error: string | null;
+}
+
+/**
+ * Booking form data
+ */
+export interface BookingFormData {
+  name: string;
+  phone: string;
+  email: string;
+  notes: string;
+}
+
+/**
+ * Booking configuration for the calendar feature
+ */
+export interface BookingConfig {
+  /** Enable the booking calendar feature */
+  enabled?: boolean;
+  /** Available time slots (e.g., ['9:00 AM', '10:00 AM']) */
+  timeSlots?: string[];
+  /** Title shown in booking modal */
+  title?: string;
+  /** Subtitle shown in booking modal */
+  subtitle?: string;
+  /** Hint text shown below calendar (e.g., "Available Monday - Saturday") */
+  hintText?: string;
+  /** Number of months ahead users can book (default: 2) */
+  monthsAhead?: number;
+  /** Called when a booking is submitted */
+  onBookingSubmit?: (data: {
+    date: Date;
+    time: string;
+    formData: BookingFormData;
+  }) => void | Promise<void>;
+  /** Analytics callback when booking modal is opened */
+  onBookingOpened?: () => void;
+  /** Analytics callback when date is selected */
+  onDateSelected?: (date: Date) => void;
+  /** Analytics callback when time is selected */
+  onTimeSelected?: (time: string) => void;
+  /** Analytics callback when booking is submitted */
+  onBookingSubmitted?: (data: {
+    date: Date;
+    time: string;
+    hasEmail: boolean;
+    hasNotes: boolean;
+  }) => void;
 }

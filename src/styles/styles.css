@@ -1373,6 +1373,452 @@
    MOBILE RESPONSIVE
    ======================================== */
 
+/* ========================================
+   APPOINTMENT BOOKING MODAL
+   ======================================== */
+
+.pcm-booking-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: 20px;
+  animation: pcmFadeIn 0.2s ease-out;
+}
+
+.pcm-booking-modal {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 28px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: pcmSlideIn 0.3s ease-out;
+}
+
+.pcm-booking-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.pcm-booking-close:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.pcm-booking-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.pcm-booking-back:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.pcm-booking-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.pcm-booking-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--pcm-wa-primary-light) 0%, var(--pcm-wa-primary) 100%);
+  color: #ffffff;
+  margin-bottom: 16px;
+}
+
+.pcm-booking-icon--small {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.pcm-booking-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+
+.pcm-booking-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Calendar */
+.pcm-calendar {
+  margin-bottom: 20px;
+}
+
+.pcm-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.pcm-calendar-month {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+}
+
+.pcm-calendar-nav {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.pcm-calendar-nav:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.pcm-calendar-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pcm-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.pcm-calendar-weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+  padding: 8px 0;
+}
+
+.pcm-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.pcm-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pcm-calendar-day:hover:not(:disabled):not(.pcm-calendar-day--empty) {
+  background: #f0f0f0;
+}
+
+.pcm-calendar-day--empty {
+  cursor: default;
+}
+
+.pcm-calendar-day--past {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.pcm-calendar-day--today {
+  background: #f0f0f0;
+  font-weight: 600;
+}
+
+.pcm-calendar-day--weekend:not(.pcm-calendar-day--past) {
+  color: var(--pcm-wa-primary-light);
+}
+
+.pcm-calendar-day--selected {
+  background: var(--pcm-wa-primary-light) !important;
+  color: #ffffff !important;
+}
+
+.pcm-booking-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+}
+
+/* Time Slots */
+.pcm-time-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.pcm-time-slot {
+  padding: 12px 8px;
+  background: #f5f5f5;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pcm-time-slot:hover {
+  background: #e8e8e8;
+  border-color: #ddd;
+}
+
+.pcm-time-slot--selected {
+  background: var(--pcm-wa-primary-light);
+  border-color: var(--pcm-wa-primary-light);
+  color: #ffffff;
+}
+
+/* Booking Form */
+.pcm-booking-form {
+  margin-top: 20px;
+}
+
+.pcm-form-group {
+  margin-bottom: 16px;
+}
+
+.pcm-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.pcm-form-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #f5f5f5;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #333;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.pcm-form-input:focus {
+  outline: none;
+  border-color: var(--pcm-wa-primary-light);
+  background: #fff;
+}
+
+.pcm-form-input::placeholder {
+  color: #aaa;
+}
+
+.pcm-form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pcm-form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.pcm-booking-submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--pcm-wa-primary-light);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+}
+
+.pcm-booking-submit:hover:not(:disabled) {
+  background: var(--pcm-wa-primary);
+  transform: translateY(-1px);
+}
+
+.pcm-booking-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pcm-booking-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: pcmSpin 0.8s linear infinite;
+}
+
+@keyframes pcmSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Success State */
+.pcm-booking-success {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.pcm-booking-success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #34c759 0%, #28a745 100%);
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.pcm-booking-confirm-text {
+  font-size: 14px;
+  color: #888;
+  margin: 16px 0 0 0;
+}
+
+.pcm-booking-done {
+  margin-top: 24px;
+  padding: 14px 40px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pcm-booking-done:hover {
+  background: #e0e0e0;
+}
+
+/* Booking button in header */
+.pcm-header-action--booking {
+  margin-right: 4px;
+}
+
+/* iMessage Theme Overrides for Booking */
+.pcm-theme--imessage .pcm-booking-icon {
+  background: linear-gradient(135deg, var(--pcm-im-primary-light) 0%, var(--pcm-im-primary) 100%);
+}
+
+.pcm-theme--imessage .pcm-calendar-day--weekend:not(.pcm-calendar-day--past) {
+  color: var(--pcm-im-primary);
+}
+
+.pcm-theme--imessage .pcm-calendar-day--selected {
+  background: var(--pcm-im-primary) !important;
+}
+
+.pcm-theme--imessage .pcm-time-slot--selected {
+  background: var(--pcm-im-primary);
+  border-color: var(--pcm-im-primary);
+}
+
+.pcm-theme--imessage .pcm-form-input:focus {
+  border-color: var(--pcm-im-primary);
+}
+
+.pcm-theme--imessage .pcm-booking-submit {
+  background: var(--pcm-im-primary);
+}
+
+.pcm-theme--imessage .pcm-booking-submit:hover:not(:disabled) {
+  background: var(--pcm-im-primary-light);
+}
+
+/* Mobile Responsive for Booking Modal */
+@media (max-width: 600px) {
+  .pcm-booking-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .pcm-booking-modal {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+    padding: 24px 20px;
+  }
+
+  .pcm-time-slots {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ========================================
+   MOBILE RESPONSIVE
+   ======================================== */
+
 @media (max-width: 600px) {
   .pcm-overlay {
     padding: 0;

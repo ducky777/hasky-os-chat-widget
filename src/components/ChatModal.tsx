@@ -6,6 +6,7 @@ import { useChat } from '../hooks/use-chat';
 import { useMobileModal, isMobileDevice } from '../hooks/use-mobile-modal';
 import { useChatModal } from '../context/ChatModalContext';
 import type { ChatModalProps, ChatMessage, ChatStyle, QuickReply } from '../types';
+import { AppointmentBookingModal, CalendarHeaderIcon } from './AppointmentBookingModal';
 
 // Default values
 const DEFAULT_WELCOME_MESSAGE = "Hello! How can I help you today?";
@@ -178,6 +179,9 @@ export function ChatModal({
 
   // Session configuration
   storageKeyPrefix = 'hocw',
+
+  // Booking configuration
+  booking,
 }: ChatModalProps) {
   const storageKey = `${storageKeyPrefix}${STORAGE_KEY_SUFFIX}`;
   const { pendingMessage, clearPendingMessage } = useChatModal();
@@ -187,6 +191,7 @@ export function ChatModal({
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   // Mobile swipe and fullscreen state
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -414,6 +419,12 @@ export function ChatModal({
     onCTAClick?.();
   }, [handleMinimize, onCTAClick, analytics]);
 
+  // Handle booking click
+  const handleBookingClick = useCallback(() => {
+    setShowBookingModal(true);
+    booking?.onBookingOpened?.();
+  }, [booking]);
+
   // Touch handlers for swipe gestures on mobile
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!isMobileDevice()) return;
@@ -514,6 +525,16 @@ export function ChatModal({
                     </span>
                   </div>
                   <div className="pcm-header-actions">
+                    {booking?.enabled && (
+                      <button
+                        className="pcm-header-action pcm-header-action--booking"
+                        onClick={handleBookingClick}
+                        aria-label="Book appointment"
+                        title="Book an appointment"
+                      >
+                        <CalendarHeaderIcon size={20} />
+                      </button>
+                    )}
                     <div className="pcm-menu-container" ref={menuRef}>
                       <button
                         className="pcm-header-action"
@@ -660,6 +681,15 @@ export function ChatModal({
           <ChatBubbleIcon />
           <span className="pcm-reopen-text">{reopenButtonText}</span>
         </button>
+      )}
+
+      {/* Appointment Booking Modal - Outside overlay to avoid backdrop-filter issues */}
+      {booking?.enabled && (
+        <AppointmentBookingModal
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+          config={booking}
+        />
       )}
     </>
   );
