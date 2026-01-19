@@ -1892,13 +1892,12 @@
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    /* Always use full viewport - we position children to avoid keyboard */
-    height: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
+    /* Height = visual viewport so it shrinks when keyboard opens */
+    height: var(--visual-viewport-height, 100dvh);
+    max-height: var(--visual-viewport-height, 100dvh);
     border-radius: 0;
     z-index: 10000;
+    /* Simple flexbox - header, messages, input stacked vertically */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1943,10 +1942,7 @@
   .pcm-embed--fullscreen .pcm-header {
     border-radius: 0;
     padding-top: calc(20px + env(safe-area-inset-top, 0px));
-    /* Header stays fixed at top - keyboard doesn't push it */
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    /* Header: fixed height, doesn't shrink */
     flex-shrink: 0;
   }
 
@@ -1966,32 +1962,18 @@
     transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
   }
 
-  /* Input area - positioned above keyboard when open */
+  /* Input area: fixed height, doesn't shrink, stays at bottom */
   .pcm-embed--fullscreen .pcm-input-area {
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: var(--keyboard-height, 0px);
-    z-index: 10001;
     flex-shrink: 0;
-    /* Background ensures input is visible over any content */
-    background: var(--pcm-wa-bg-input);
   }
 
-  /* iMessage theme input background in fullscreen */
-  .pcm-theme--imessage .pcm-embed--fullscreen .pcm-input-area {
-    background: var(--pcm-im-bg-input);
-  }
-
-  /* Messages area - takes remaining space, accounting for keyboard */
+  /* Messages area: takes ALL remaining space between header and input */
   .pcm-embed--fullscreen .pcm-messages {
     flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Add padding at bottom for the fixed input area + keyboard */
-    padding-bottom: calc(70px + var(--keyboard-height, 0px));
   }
 
   .pcm-messages {
