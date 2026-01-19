@@ -152,6 +152,7 @@ export function ChatModal({
 
   // Request configuration
   requestParams = {},
+  headers = {},
 
   // Content
   welcomeMessage = DEFAULT_WELCOME_MESSAGE,
@@ -210,6 +211,7 @@ export function ChatModal({
   } = useChat({
     apiEndpoint,
     requestParams,
+    headers,
     storageKeyPrefix,
     persistence,
   });

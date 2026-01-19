@@ -205,6 +205,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
   const {
     apiEndpoint,
     requestParams = {},
+    headers: customHeaders = {},
     storageKeyPrefix = 'hocw',
     persistence,
   } = options;
@@ -283,6 +284,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...customHeaders,
           },
           body: JSON.stringify({
             session_id: sessionIdRef.current,
@@ -403,7 +405,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
         abortControllerRef.current = null;
       }
     },
-    [messages, isLoading, isStreaming, apiEndpoint, requestParams, persistence]
+    [messages, isLoading, isStreaming, apiEndpoint, requestParams, customHeaders, persistence]
   );
 
   const clearMessages = useCallback(() => {

@@ -56,6 +56,7 @@ The main phone-style chat modal component.
 | `theme` | `'whatsapp' \| 'imessage'` | `'imessage'` | Chat UI theme |
 | `storeName` | `string` | `'Chat'` | Display name in header |
 | `requestParams` | `object` | `{}` | Additional params sent with each request (e.g., `vertical`, `intent`) |
+| `headers` | `Record<string, string>` | `{}` | Custom headers to send with each request (e.g., `Authorization`, `X-API-Key`) |
 | `welcomeMessage` | `string` | `'Hello! How can I help you today?'` | Initial welcome message |
 | `placeholder` | `string` | `'Type a message...'` | Input placeholder text |
 | `quickReplies` | `QuickReply[]` | `[]` | Quick reply buttons shown before conversation |
@@ -194,6 +195,37 @@ export function Chat() {
     />
   );
 }
+```
+
+### With API Key Authentication
+
+```tsx
+// Option 1: Direct API key (for backend-to-backend or secure environments)
+<ChatModal
+  apiEndpoint="https://api.example.com/chat"
+  headers={{
+    'X-API-Key': process.env.NEXT_PUBLIC_CHAT_API_KEY!,
+  }}
+/>
+
+// Option 2: Bearer token authentication
+<ChatModal
+  apiEndpoint="https://api.example.com/chat"
+  headers={{
+    'Authorization': `Bearer ${accessToken}`,
+  }}
+/>
+
+// Option 3: Proxy through your own API (recommended for client-side apps)
+// This way the API key stays on your server, not exposed to the client
+<ChatModal
+  apiEndpoint="/api/chat"  // Your Next.js/Express API route
+  requestParams={{
+    vertical: 'MY_VERTICAL',
+  }}
+/>
+// Then in your /api/chat route, add the API key server-side:
+// headers: { 'X-API-Key': process.env.CHAT_API_KEY }
 ```
 
 ### With Custom Persistence (Supabase)

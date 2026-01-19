@@ -87,6 +87,8 @@ export interface ChatModalProps {
   // Request configuration
   /** Parameters to send with each chat request */
   requestParams?: ChatRequestParams;
+  /** Custom headers to send with each request (e.g., Authorization, X-API-Key) */
+  headers?: Record<string, string>;
 
   // Content
   /** Welcome message shown at start */
@@ -171,6 +173,8 @@ export interface UseChatOptions {
   apiEndpoint: string;
   /** Request parameters to send with each message */
   requestParams?: ChatRequestParams;
+  /** Custom headers to send with each request */
+  headers?: Record<string, string>;
   /** Storage key prefix */
   storageKeyPrefix?: string;
   /** Persistence callbacks */
