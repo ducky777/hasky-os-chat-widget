@@ -1,4 +1,4 @@
-# @hasky-os/chat-widget
+# @ducky777/chat-widget
 
 Phone-style chat modal component with WhatsApp and iMessage themes. Fully configurable and framework-agnostic (works with Next.js, React, etc.).
 
@@ -6,21 +6,21 @@ Phone-style chat modal component with WhatsApp and iMessage themes. Fully config
 
 ```bash
 # From GitHub (private repo)
-npm install github:hasky-os/hasky-os-chat-widget
+npm install github:ducky777/hasky-os-chat-widget
 
 # Or with npm link for local development
 cd /path/to/hasky-os-chat-widget
 npm link
 
 cd /path/to/your-project
-npm link @hasky-os/chat-widget
+npm link @ducky777/chat-widget
 ```
 
 ## Quick Start
 
 ```tsx
-import { ChatModal, ChatModalProvider } from '@hasky-os/chat-widget';
-import '@hasky-os/chat-widget/styles';
+import { ChatModal, ChatModalProvider } from '@ducky777/chat-widget';
+import '@ducky777/chat-widget/styles';
 
 function App() {
   return (
@@ -77,7 +77,7 @@ The main phone-style chat modal component.
 A floating prompt ribbon component (like on success-stories page).
 
 ```tsx
-import { FloatingPromptRibbon, useChatModal } from '@hasky-os/chat-widget';
+import { FloatingPromptRibbon, useChatModal } from '@ducky777/chat-widget';
 
 function MyPage() {
   const { openChat } = useChatModal();
@@ -150,8 +150,8 @@ const {
 
 ```tsx
 // app/layout.tsx
-import { ChatModalProvider } from '@hasky-os/chat-widget';
-import '@hasky-os/chat-widget/styles';
+import { ChatModalProvider } from '@ducky777/chat-widget';
+import '@ducky777/chat-widget/styles';
 
 export default function RootLayout({ children }) {
   return (
@@ -169,7 +169,7 @@ export default function RootLayout({ children }) {
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { ChatModal } from '@hasky-os/chat-widget';
+import { ChatModal } from '@ducky777/chat-widget';
 
 export function Chat() {
   const pathname = usePathname();
