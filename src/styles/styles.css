@@ -1892,18 +1892,16 @@
     top: 0;
     left: 0;
     right: 0;
-    /* Use visual viewport height so container shrinks with keyboard */
-    height: var(--visual-viewport-height, 100vh);
-    height: var(--visual-viewport-height, 100dvh);
-    max-height: var(--visual-viewport-height, 100vh);
+    bottom: 0;
+    /* Always use full viewport - we position children to avoid keyboard */
+    height: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
     border-radius: 0;
     z-index: 10000;
     display: flex;
     flex-direction: column;
-    /* Don't let keyboard push the layout - we handle it ourselves */
     overflow: hidden;
-    /* Smooth transition when keyboard appears/disappears */
-    transition: height 0.15s ease-out, max-height 0.15s ease-out;
   }
 
   /* Drag handle indicator for bottom sheet */
@@ -1968,11 +1966,14 @@
     transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
   }
 
-  /* Input area stays at bottom of flex container */
+  /* Input area - positioned above keyboard when open */
   .pcm-embed--fullscreen .pcm-input-area {
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    position: relative;
-    z-index: 10;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--keyboard-height, 0px);
+    z-index: 10001;
     flex-shrink: 0;
     /* Background ensures input is visible over any content */
     background: var(--pcm-wa-bg-input);
@@ -1983,12 +1984,14 @@
     background: var(--pcm-im-bg-input);
   }
 
-  /* Messages area shrinks when keyboard opens - this is the ONLY thing that changes size */
+  /* Messages area - takes remaining space, accounting for keyboard */
   .pcm-embed--fullscreen .pcm-messages {
     flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    /* Add padding at bottom for the fixed input area + keyboard */
+    padding-bottom: calc(70px + var(--keyboard-height, 0px));
   }
 
   .pcm-messages {
