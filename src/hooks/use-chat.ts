@@ -1,0 +1,441 @@
+'use client';
+
+import { useState, useCallback, useRef, useEffect } from 'react';
+import type { ChatMessage, UseChatOptions, UseChatReturn } from '../types';
+
+interface SuggestedResponsesPayload {
+  type: 'suggested_responses';
+  suggested_responses: string[];
+}
+
+interface StoredChatData {
+  chatSessionId: string;
+  messages: ChatMessage[];
+  suggestedResponses: string[];
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+}
+
+function getStorageKeys(prefix: string) {
+  return {
+    sessionId: `${prefix}_session_id`,
+    chatSessionId: `${prefix}_chat_session_id`,
+    messages: `${prefix}_chat_messages`,
+  };
+}
+
+function getOrCreateSessionId(storageKey: string): string {
+  if (typeof window === 'undefined') return generateId();
+
+  let sessionId = localStorage.getItem(storageKey);
+  if (!sessionId) {
+    sessionId = `session_${generateId()}`;
+    localStorage.setItem(storageKey, sessionId);
+  }
+  return sessionId;
+}
+
+function getOrCreateChatSessionId(storageKey: string): string {
+  if (typeof window === 'undefined') return generateId();
+
+  let chatSessionId = sessionStorage.getItem(storageKey);
+  if (!chatSessionId) {
+    chatSessionId = `chat_${generateId()}`;
+    sessionStorage.setItem(storageKey, chatSessionId);
+  }
+  return chatSessionId;
+}
+
+function createNewChatSessionId(storageKey: string): string {
+  const chatSessionId = `chat_${generateId()}`;
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(storageKey, chatSessionId);
+  }
+  return chatSessionId;
+}
+
+function loadCachedChat(storageKey: string): StoredChatData | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const stored = localStorage.getItem(storageKey);
+    if (!stored) return null;
+
+    const data = JSON.parse(stored) as StoredChatData;
+    // Convert timestamp strings back to Date objects
+    data.messages = data.messages.map((m) => ({
+      ...m,
+      timestamp: m.timestamp ? new Date(m.timestamp) : undefined,
+    }));
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function saveChatToStorage(
+  storageKey: string,
+  chatSessionId: string,
+  messages: ChatMessage[],
+  suggestedResponses: string[]
+): void {
+  if (typeof window === 'undefined') return;
+
+  const data: StoredChatData = {
+    chatSessionId,
+    messages,
+    suggestedResponses,
+  };
+  localStorage.setItem(storageKey, JSON.stringify(data));
+}
+
+function clearChatStorage(storageKey: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(storageKey);
+}
+
+/**
+ * Parse suggested responses from message content.
+ * Looks for JSON blocks with format: {"type": "suggested_responses", "suggested_responses": [...]}
+ */
+function parseSuggestedResponses(content: string): {
+  cleanContent: string;
+  suggestedResponses: string[];
+} {
+  const suggestedResponses: string[] = [];
+  let cleanContent = content;
+
+  // Pattern to match JSON blocks with suggested_responses
+  const jsonPattern = /```json\s*(\{[\s\S]*?"type"\s*:\s*"suggested_responses"[\s\S]*?\})\s*```/g;
+  const plainJsonPattern = /(\{[\s\S]*?"type"\s*:\s*"suggested_responses"[\s\S]*?\})/g;
+
+  // Try to find JSON in code blocks first
+  const match = jsonPattern.exec(content);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1]) as SuggestedResponsesPayload;
+      if (parsed.type === 'suggested_responses' && Array.isArray(parsed.suggested_responses)) {
+        suggestedResponses.push(...parsed.suggested_responses);
+        cleanContent = content.replace(match[0], '').trim();
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  // If no code block found, try plain JSON (at end of message)
+  if (suggestedResponses.length === 0) {
+    const matches = content.match(plainJsonPattern);
+    if (matches) {
+      for (const jsonStr of matches) {
+        try {
+          const parsed = JSON.parse(jsonStr) as SuggestedResponsesPayload;
+          if (parsed.type === 'suggested_responses' && Array.isArray(parsed.suggested_responses)) {
+            suggestedResponses.push(...parsed.suggested_responses);
+            cleanContent = content.replace(jsonStr, '').trim();
+            break; // Only use first valid match
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }
+
+  return { cleanContent, suggestedResponses };
+}
+
+/**
+ * Parse SSE data from the chat API response.
+ * Handles both "data: {...}" format (FastAPI) and "0:..." format (Vercel AI SDK)
+ */
+function parseSSELine(
+  line: string
+): { chunk?: string; done?: boolean; error?: string; suggestedResponses?: string[] } | null {
+  // Handle FastAPI SSE format: "data: {...}"
+  if (line.startsWith('data: ')) {
+    try {
+      const data = JSON.parse(line.slice(6));
+      // Handle suggested_responses event
+      if (data.type === 'suggested_responses' && Array.isArray(data.suggested_responses)) {
+        return { suggestedResponses: data.suggested_responses };
+      }
+      return data;
+    } catch {
+      // If JSON parse fails, might be raw data
+      return { chunk: line.slice(6) };
+    }
+  }
+
+  // Handle Vercel AI SDK format: "0:..." for text chunks
+  if (line.startsWith('0:')) {
+    try {
+      // The format is typically 0:"text content"
+      const content = JSON.parse(line.slice(2));
+      return { chunk: content };
+    } catch {
+      // Raw text after 0:
+      return { chunk: line.slice(2) };
+    }
+  }
+
+  // Handle other Vercel AI SDK message types
+  if (line.startsWith('e:') || line.startsWith('d:')) {
+    // Metadata/done events
+    try {
+      const data = JSON.parse(line.slice(2));
+      if (data.finishReason || line.startsWith('d:')) {
+        return { done: true };
+      }
+    } catch {
+      // Ignore parse errors for metadata
+    }
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * Hook for managing chat state and SSE streaming
+ */
+export function useChat(options: UseChatOptions): UseChatReturn {
+  const {
+    apiEndpoint,
+    requestParams = {},
+    storageKeyPrefix = 'hocw',
+    persistence,
+  } = options;
+
+  const storageKeys = getStorageKeys(storageKeyPrefix);
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [suggestedResponses, setSuggestedResponses] = useState<string[]>([]);
+
+  const sessionIdRef = useRef<string>('');
+  const chatSessionIdRef = useRef<string>('');
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Initialize session IDs and load cached chat on mount
+  useEffect(() => {
+    sessionIdRef.current = getOrCreateSessionId(storageKeys.sessionId);
+    chatSessionIdRef.current = getOrCreateChatSessionId(storageKeys.chatSessionId);
+
+    // Load cached chat if it matches the current chat session
+    const cached = loadCachedChat(storageKeys.messages);
+    if (cached && cached.chatSessionId === chatSessionIdRef.current) {
+      setMessages(cached.messages);
+      setSuggestedResponses(cached.suggestedResponses);
+    }
+
+    // Notify persistence of session
+    persistence?.onSessionCreated?.(chatSessionIdRef.current);
+  }, [storageKeys.sessionId, storageKeys.chatSessionId, storageKeys.messages, persistence]);
+
+  // Save chat to localStorage whenever messages or responses change
+  useEffect(() => {
+    if (chatSessionIdRef.current && messages.length > 0) {
+      saveChatToStorage(storageKeys.messages, chatSessionIdRef.current, messages, suggestedResponses);
+    }
+  }, [messages, suggestedResponses, storageKeys.messages]);
+
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!content.trim() || isLoading || isStreaming) return;
+
+      // Cancel any ongoing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      const userMessage: ChatMessage = {
+        id: generateId(),
+        role: 'user',
+        content: content.trim(),
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+      setError(null);
+      setStreamingMessage('');
+      setSuggestedResponses([]); // Clear previous suggested responses
+
+      // Call persistence callback for user message
+      persistence?.onSaveMessage?.(userMessage, chatSessionIdRef.current);
+
+      // Prepare messages for API (convert to API format)
+      const apiMessages = [
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user' as const, content: content.trim() },
+      ];
+
+      abortControllerRef.current = new AbortController();
+
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            session_id: sessionIdRef.current,
+            chat_session_id: chatSessionIdRef.current,
+            messages: apiMessages,
+            ...requestParams,
+          }),
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `HTTP ${response.status}`);
+        }
+
+        if (!response.body) {
+          throw new Error('No response body');
+        }
+
+        setIsLoading(false);
+        setIsStreaming(true);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+        let buffer = '';
+        let receivedSuggestedResponses: string[] = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+
+          // Keep the last potentially incomplete line in the buffer
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+
+            const parsed = parseSSELine(trimmedLine);
+            if (!parsed) continue;
+
+            if (parsed.error) {
+              throw new Error(parsed.error);
+            }
+
+            if (parsed.chunk) {
+              fullResponse += parsed.chunk;
+              setStreamingMessage(fullResponse);
+            }
+
+            // Handle suggested responses from SSE event
+            if (parsed.suggestedResponses) {
+              receivedSuggestedResponses = parsed.suggestedResponses;
+            }
+
+            if (parsed.done) {
+              break;
+            }
+          }
+        }
+
+        // Process any remaining buffer
+        if (buffer.trim()) {
+          const parsed = parseSSELine(buffer.trim());
+          if (parsed?.chunk) {
+            fullResponse += parsed.chunk;
+          }
+          if (parsed?.suggestedResponses) {
+            receivedSuggestedResponses = parsed.suggestedResponses;
+          }
+        }
+
+        // Create the assistant message and extract suggestions
+        if (fullResponse) {
+          // Use SSE-received suggestions first, fall back to parsing from content
+          let finalSuggestions = receivedSuggestedResponses;
+          let cleanContent = fullResponse;
+
+          // If no SSE suggestions, try parsing from content (legacy support)
+          if (finalSuggestions.length === 0) {
+            const parsed = parseSuggestedResponses(cleanContent);
+            cleanContent = parsed.cleanContent;
+            finalSuggestions = parsed.suggestedResponses;
+          }
+
+          const assistantMessage: ChatMessage = {
+            id: generateId(),
+            role: 'assistant',
+            content: cleanContent,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
+
+          // Call persistence callback for assistant message
+          persistence?.onSaveMessage?.(assistantMessage, chatSessionIdRef.current);
+
+          // Set suggested responses if any were found
+          if (finalSuggestions.length > 0) {
+            setSuggestedResponses(finalSuggestions);
+          }
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // Request was cancelled, don't show error
+          return;
+        }
+
+        const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+        setError(errorMessage);
+      } finally {
+        setIsLoading(false);
+        setIsStreaming(false);
+        setStreamingMessage('');
+        abortControllerRef.current = null;
+      }
+    },
+    [messages, isLoading, isStreaming, apiEndpoint, requestParams, persistence]
+  );
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setError(null);
+    setStreamingMessage('');
+    setSuggestedResponses([]);
+    clearChatStorage(storageKeys.messages);
+  }, [storageKeys.messages]);
+
+  const startNewChat = useCallback(() => {
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    clearMessages();
+    chatSessionIdRef.current = createNewChatSessionId(storageKeys.chatSessionId);
+
+    // Notify persistence of new session
+    persistence?.onSessionCreated?.(chatSessionIdRef.current);
+  }, [clearMessages, storageKeys.chatSessionId, persistence]);
+
+  return {
+    messages,
+    isLoading,
+    isStreaming,
+    streamingMessage,
+    error,
+    suggestedResponses,
+    sendMessage,
+    clearMessages,
+    startNewChat,
+  };
+}

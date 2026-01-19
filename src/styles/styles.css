@@ -1,0 +1,1576 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+/* ========================================
+   HASKY-OS CHAT WIDGET
+   Phone-style chat modal with WhatsApp and iMessage themes
+   ======================================== */
+
+/* CSS Custom Properties for theming */
+:root {
+  /* WhatsApp Theme (default) */
+  --pcm-wa-primary: #008069;
+  --pcm-wa-primary-light: #00a884;
+  --pcm-wa-primary-accent: #25d366;
+  --pcm-wa-bg-dark: #111b21;
+  --pcm-wa-bg-chat: #0b141a;
+  --pcm-wa-bg-messages: #e5ddd5;
+  --pcm-wa-bg-input: #f0f2f5;
+  --pcm-wa-bubble-sent: #d9fdd3;
+  --pcm-wa-bubble-received: #ffffff;
+  --pcm-wa-text-primary: #111b21;
+  --pcm-wa-text-secondary: #667781;
+  --pcm-wa-text-time: rgba(0, 0, 0, 0.45);
+  --pcm-wa-status: #34b7f1;
+
+  /* iMessage Theme */
+  --pcm-im-primary: #007AFF;
+  --pcm-im-primary-light: #409CFF;
+  --pcm-im-bg-dark: #1c1c1e;
+  --pcm-im-bg-chat: #000000;
+  --pcm-im-bg-messages: #ffffff;
+  --pcm-im-bg-input: #f2f2f7;
+  --pcm-im-bubble-sent: #007AFF;
+  --pcm-im-bubble-received: #e5e5ea;
+  --pcm-im-text-sent: #ffffff;
+  --pcm-im-text-received: #000000;
+  --pcm-im-text-secondary: #8e8e93;
+  --pcm-im-text-time: #8e8e93;
+
+  /* Floating Prompt Ribbon */
+  --hocw-ribbon-bg: rgba(30, 30, 35, 0.8);
+  --hocw-ribbon-border: rgba(100, 100, 110, 0.5);
+  --hocw-ribbon-text: #ffffff;
+  --hocw-ribbon-text-muted: #9ca3af;
+  --hocw-ribbon-accent: #d4c5a3;
+  --hocw-ribbon-card-bg: rgba(40, 40, 50, 0.95);
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes pcmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pcmSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pcmReopenSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pcmMsgSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pcmTypingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@keyframes pcmCursorBlink {
+  50% { opacity: 0; }
+}
+
+@keyframes pcmPhoneGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(0, 168, 132, 0.15),
+      0 25px 80px rgba(0, 0, 0, 0.5),
+      0 0 60px rgba(0, 168, 132, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(0, 168, 132, 0.25),
+      0 25px 80px rgba(0, 0, 0, 0.5),
+      0 0 80px rgba(0, 168, 132, 0.15);
+  }
+}
+
+@keyframes pcmPhoneGlowBlue {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(0, 122, 255, 0.15),
+      0 25px 80px rgba(0, 0, 0, 0.5),
+      0 0 60px rgba(0, 122, 255, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(0, 122, 255, 0.25),
+      0 25px 80px rgba(0, 0, 0, 0.5),
+      0 0 80px rgba(0, 122, 255, 0.15);
+  }
+}
+
+@keyframes pcmPulse {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes pcmSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pcmMinimizeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(60px) scale(0.9);
+  }
+}
+
+@keyframes pcmOverlayFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ========================================
+   MODAL OVERLAY
+   ======================================== */
+
+.pcm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: pcmFadeIn 0.3s ease-out;
+}
+
+.pcm-modal-content {
+  position: relative;
+  animation: pcmSlideIn 0.4s ease-out 0.1s both;
+}
+
+/* Minimizing state */
+.pcm-overlay--minimizing {
+  animation: pcmOverlayFadeOut 0.3s ease-out forwards;
+}
+
+.pcm-modal-content--minimizing {
+  animation: pcmMinimizeOut 0.3s ease-out forwards;
+}
+
+/* ========================================
+   MINIMIZE BUTTON
+   ======================================== */
+
+.pcm-minimize-btn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.pcm-minimize-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.08);
+}
+
+.pcm-minimize-btn:active {
+  transform: scale(0.95);
+}
+
+/* ========================================
+   PHONE FRAME - WhatsApp (Default)
+   ======================================== */
+
+.pcm-phone-frame {
+  position: relative;
+  max-width: 560px;
+  width: calc(100vw - 40px);
+  background: var(--pcm-wa-bg-dark);
+  border-radius: 44px;
+  padding: 14px;
+  animation: pcmPhoneGlow 4s ease-in-out infinite;
+}
+
+.pcm-phone-notch {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 28px;
+  background: #0a0f12;
+  border-radius: 0 0 18px 18px;
+  z-index: 10;
+}
+
+.pcm-phone-notch::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: #1a2a33;
+  border-radius: 50%;
+}
+
+/* ========================================
+   CHAT EMBED - WhatsApp (Default)
+   ======================================== */
+
+.pcm-embed {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 32px;
+  overflow: hidden;
+  background: var(--pcm-wa-bg-chat);
+  height: 90vh;
+  max-height: none;
+  min-height: 400px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ========================================
+   HEADER - WhatsApp (Default)
+   ======================================== */
+
+.pcm-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  background: var(--pcm-wa-primary);
+  gap: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 38px;
+  flex-shrink: 0;
+}
+
+.pcm-header-back {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pcm-header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pcm-header-name {
+  font-size: 17px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.pcm-header-status {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pcm-online-dot {
+  width: 6px;
+  height: 6px;
+  background: #25d366;
+  border-radius: 50%;
+}
+
+.pcm-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.pcm-header-action {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pcm-header-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================
+   DROPDOWN MENU
+   ======================================== */
+
+.pcm-menu-container {
+  position: relative;
+}
+
+.pcm-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  min-width: 160px;
+  overflow: hidden;
+  z-index: 100;
+  animation: pcmMsgSlideIn 0.15s ease-out;
+}
+
+.pcm-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #111b21;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.pcm-dropdown-item:hover {
+  background: #f0f2f5;
+}
+
+.pcm-dropdown-item:active {
+  background: #e5e7eb;
+}
+
+.pcm-dropdown-item svg {
+  flex-shrink: 0;
+  color: #667781;
+}
+
+/* ========================================
+   MESSAGES AREA - WhatsApp (Default)
+   ======================================== */
+
+.pcm-messages {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: var(--pcm-wa-bg-messages);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8c3ba' fill-opacity='0.25'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========================================
+   MESSAGE BUBBLES - WhatsApp (Default)
+   ======================================== */
+
+.pcm-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+  animation: pcmMsgSlideIn 0.2s ease-out;
+}
+
+.pcm-msg--sent {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.pcm-msg--received {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.pcm-msg--welcome {
+  max-width: 90%;
+}
+
+.pcm-msg-bubble {
+  padding: 8px 10px 8px 12px;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.13);
+}
+
+.pcm-msg-bubble--sent {
+  background: var(--pcm-wa-bubble-sent);
+  border-top-right-radius: 0;
+}
+
+.pcm-msg-bubble--received {
+  background: var(--pcm-wa-bubble-received);
+  border-top-left-radius: 0;
+}
+
+.pcm-msg-text {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--pcm-wa-text-primary);
+  margin: 0;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.pcm-msg-text--markdown {
+  white-space: normal;
+}
+
+.pcm-msg-text--markdown p {
+  margin: 0;
+}
+
+.pcm-msg-text--markdown strong {
+  font-weight: 600;
+}
+
+.pcm-msg-text--markdown em {
+  font-style: italic;
+}
+
+.pcm-msg-text--markdown ul,
+.pcm-msg-text--markdown ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.pcm-msg-text--markdown li {
+  margin: 2px 0;
+}
+
+.pcm-msg-text--markdown code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.pcm-msg-text--markdown a {
+  color: #027eb5;
+  text-decoration: underline;
+}
+
+.pcm-msg-text--streaming {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.pcm-msg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 2px;
+  float: right;
+  margin-left: 8px;
+  position: relative;
+  top: 4px;
+}
+
+.pcm-msg-time {
+  font-size: 11px;
+  color: var(--pcm-wa-text-time);
+}
+
+.pcm-msg-status {
+  color: var(--pcm-wa-status);
+  display: flex;
+  align-items: center;
+}
+
+.pcm-msg-status--delivered {
+  font-size: 11px;
+  color: var(--pcm-wa-text-time);
+  font-weight: 400;
+}
+
+/* Typing indicator */
+.pcm-msg-bubble--typing {
+  padding: 12px 16px;
+}
+
+.pcm-typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.pcm-typing-dots span {
+  width: 7px;
+  height: 7px;
+  background: var(--pcm-wa-text-secondary);
+  border-radius: 50%;
+  animation: pcmTypingBounce 1.4s ease-in-out infinite;
+}
+
+.pcm-typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.pcm-typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.pcm-typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 15px;
+  background: var(--pcm-wa-primary-light);
+  margin-left: 2px;
+  animation: pcmCursorBlink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+/* ========================================
+   QUICK REPLIES - WhatsApp (Default)
+   ======================================== */
+
+.pcm-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.pcm-quick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 168, 132, 0.35);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: inherit;
+  animation: pcmSlideUp 0.4s ease both;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.pcm-quick-card:hover {
+  background: rgba(0, 168, 132, 0.08);
+  border-color: rgba(0, 168, 132, 0.5);
+  transform: translateY(-2px);
+}
+
+.pcm-quick-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.pcm-quick-card-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pcm-wa-text-primary);
+  line-height: 1.35;
+}
+
+.pcm-quick-card-subtext {
+  font-size: 12px;
+  color: var(--pcm-wa-text-secondary);
+  font-weight: 400;
+}
+
+/* Suggested Responses */
+.pcm-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0;
+  animation: pcmMsgSlideIn 0.3s ease-out;
+}
+
+.pcm-suggestion {
+  background: #ffffff;
+  border: 1px solid var(--pcm-wa-primary-light);
+  color: var(--pcm-wa-primary-light);
+  padding: 8px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.pcm-suggestion:hover {
+  background: var(--pcm-wa-primary-light);
+  color: #ffffff;
+  border-color: var(--pcm-wa-primary-light);
+}
+
+.pcm-suggestion:active {
+  transform: scale(0.97);
+}
+
+/* ========================================
+   FLOATING CTA BUTTON
+   ======================================== */
+
+.pcm-floating-cta {
+  position: sticky;
+  bottom: 16px;
+  align-self: flex-end;
+  margin-top: auto;
+  margin-right: 0;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 50px;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pcm-floating-cta:hover {
+  background: #2a2a2a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pcm-floating-cta:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.pcm-floating-cta-arrow {
+  font-size: 12px;
+  transition: transform 0.15s ease;
+}
+
+.pcm-floating-cta:hover .pcm-floating-cta-arrow {
+  transform: translateX(2px);
+}
+
+/* ========================================
+   INPUT AREA - WhatsApp (Default)
+   ======================================== */
+
+.pcm-input-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--pcm-wa-bg-input);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pcm-input-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 4px 18px;
+}
+
+.pcm-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: var(--pcm-wa-text-primary);
+  font-family: inherit;
+  padding: 12px 0;
+  min-width: 0;
+}
+
+.pcm-input::placeholder {
+  color: var(--pcm-wa-text-secondary);
+}
+
+.pcm-input:disabled {
+  opacity: 0.5;
+}
+
+.pcm-send-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--pcm-wa-primary-light);
+  border: none;
+  color: var(--pcm-wa-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pcm-send-btn:hover:not(:disabled) {
+  background: #06cf9c;
+}
+
+.pcm-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Hint */
+.pcm-hint {
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--pcm-wa-text-secondary);
+  background: var(--pcm-wa-bg-input);
+  flex-shrink: 0;
+}
+
+/* ========================================
+   FLOATING REOPEN BUTTON - WhatsApp (Default)
+   ======================================== */
+
+.pcm-reopen-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--pcm-wa-primary-light) 0%, #00c896 100%);
+  border: none;
+  border-radius: 50px;
+  color: #ffffff;
+  cursor: pointer;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow:
+    0 4px 20px rgba(0, 168, 132, 0.4),
+    0 8px 40px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  animation: pcmReopenSlideIn 0.4s ease-out;
+}
+
+.pcm-reopen-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 30px rgba(0, 168, 132, 0.5),
+    0 12px 50px rgba(0, 0, 0, 0.35);
+}
+
+.pcm-reopen-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.pcm-reopen-text {
+  white-space: nowrap;
+}
+
+/* Pulse animation */
+.pcm-reopen-btn::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, var(--pcm-wa-primary-light) 0%, #00c896 100%);
+  z-index: -1;
+  opacity: 0;
+  animation: pcmPulse 2s ease-in-out infinite;
+}
+
+/* ========================================
+   iMESSAGE THEME OVERRIDES
+   ======================================== */
+
+.pcm-theme--imessage .pcm-phone-frame {
+  background: var(--pcm-im-bg-dark);
+  animation: pcmPhoneGlowBlue 4s ease-in-out infinite;
+}
+
+.pcm-theme--imessage .pcm-phone-notch {
+  background: #000000;
+}
+
+.pcm-theme--imessage .pcm-phone-notch::after {
+  background: #2c2c2e;
+}
+
+.pcm-theme--imessage .pcm-embed {
+  background: var(--pcm-im-bg-chat);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+}
+
+/* iMessage Header */
+.pcm-theme--imessage .pcm-header {
+  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pcm-theme--imessage .pcm-online-dot {
+  background: #30d158;
+}
+
+.pcm-theme--imessage .pcm-header-status {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* iMessage Messages Area */
+.pcm-theme--imessage .pcm-messages {
+  background-color: var(--pcm-im-bg-messages);
+  background-image: none;
+}
+
+/* iMessage Bubbles */
+.pcm-theme--imessage .pcm-msg-bubble {
+  box-shadow: none;
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--sent {
+  background: var(--pcm-im-bubble-sent);
+  border-radius: 18px;
+  border-top-right-radius: 4px;
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--sent .pcm-msg-text {
+  color: var(--pcm-im-text-sent);
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--sent .pcm-msg-time {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--sent .pcm-msg-status--delivered {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--received {
+  background: var(--pcm-im-bubble-received);
+  border-radius: 18px;
+  border-top-left-radius: 4px;
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--received .pcm-msg-text {
+  color: var(--pcm-im-text-received);
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--received .pcm-msg-time {
+  color: var(--pcm-im-text-time);
+}
+
+/* iMessage Markdown links */
+.pcm-theme--imessage .pcm-msg-bubble--received .pcm-msg-text--markdown a {
+  color: var(--pcm-im-primary);
+}
+
+.pcm-theme--imessage .pcm-msg-bubble--sent .pcm-msg-text--markdown a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* iMessage Typing Indicator */
+.pcm-theme--imessage .pcm-typing-dots span {
+  background: var(--pcm-im-text-secondary);
+}
+
+.pcm-theme--imessage .pcm-typing-cursor {
+  background: var(--pcm-im-primary);
+}
+
+/* iMessage Quick Replies */
+.pcm-theme--imessage .pcm-quick-card {
+  border-color: rgba(0, 122, 255, 0.35);
+}
+
+.pcm-theme--imessage .pcm-quick-card:hover {
+  background: rgba(0, 122, 255, 0.08);
+  border-color: rgba(0, 122, 255, 0.5);
+}
+
+.pcm-theme--imessage .pcm-quick-card-text {
+  color: var(--pcm-im-text-received);
+}
+
+.pcm-theme--imessage .pcm-quick-card-subtext {
+  color: var(--pcm-im-text-secondary);
+}
+
+/* iMessage Suggestions */
+.pcm-theme--imessage .pcm-suggestion {
+  border-color: var(--pcm-im-primary);
+  color: var(--pcm-im-primary);
+}
+
+.pcm-theme--imessage .pcm-suggestion:hover {
+  background: var(--pcm-im-primary);
+  color: #ffffff;
+  border-color: var(--pcm-im-primary);
+}
+
+/* iMessage Input Area */
+.pcm-theme--imessage .pcm-input-area {
+  background: var(--pcm-im-bg-input);
+}
+
+.pcm-theme--imessage .pcm-input-container {
+  background: #ffffff;
+  border: 1px solid #c7c7cc;
+}
+
+.pcm-theme--imessage .pcm-input {
+  color: var(--pcm-im-text-received);
+}
+
+.pcm-theme--imessage .pcm-input::placeholder {
+  color: var(--pcm-im-text-secondary);
+}
+
+.pcm-theme--imessage .pcm-send-btn {
+  background: var(--pcm-im-primary);
+  color: #ffffff;
+}
+
+.pcm-theme--imessage .pcm-send-btn:hover:not(:disabled) {
+  background: var(--pcm-im-primary-light);
+}
+
+/* iMessage Hint */
+.pcm-theme--imessage .pcm-hint {
+  background: var(--pcm-im-bg-input);
+  color: var(--pcm-im-text-secondary);
+}
+
+/* iMessage Reopen Button */
+.pcm-theme--imessage.pcm-reopen-btn {
+  background: linear-gradient(135deg, var(--pcm-im-primary) 0%, var(--pcm-im-primary-light) 100%);
+  box-shadow:
+    0 4px 20px rgba(0, 122, 255, 0.4),
+    0 8px 40px rgba(0, 0, 0, 0.3);
+}
+
+.pcm-theme--imessage.pcm-reopen-btn:hover {
+  box-shadow:
+    0 6px 30px rgba(0, 122, 255, 0.5),
+    0 12px 50px rgba(0, 0, 0, 0.35);
+}
+
+.pcm-theme--imessage.pcm-reopen-btn::before {
+  background: linear-gradient(135deg, var(--pcm-im-primary) 0%, var(--pcm-im-primary-light) 100%);
+}
+
+/* iMessage Dropdown */
+.pcm-theme--imessage .pcm-dropdown {
+  background: #ffffff;
+}
+
+.pcm-theme--imessage .pcm-dropdown-item {
+  color: var(--pcm-im-text-received);
+}
+
+.pcm-theme--imessage .pcm-dropdown-item:hover {
+  background: var(--pcm-im-bg-input);
+}
+
+.pcm-theme--imessage .pcm-dropdown-item svg {
+  color: var(--pcm-im-text-secondary);
+}
+
+/* ========================================
+   FLOATING PROMPT RIBBON
+   ======================================== */
+
+/* Desktop: Fixed vertical stack on right side */
+.hocw-ribbon-desktop {
+  display: none;
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 1024px) {
+  .hocw-ribbon-desktop {
+    display: flex;
+  }
+}
+
+.hocw-ribbon-header {
+  text-align: right;
+  margin-bottom: 4px;
+}
+
+.hocw-ribbon-title {
+  color: var(--hocw-ribbon-accent);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.hocw-ribbon-subtitle {
+  color: var(--hocw-ribbon-text-muted);
+  font-size: 10px;
+  margin: 0;
+}
+
+.hocw-ribbon-card {
+  position: relative;
+  width: 288px;
+  text-align: left;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--hocw-ribbon-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--hocw-ribbon-border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: pcmSlideUp 0.4s ease both;
+}
+
+.hocw-ribbon-card:hover {
+  border-color: rgba(212, 197, 163, 0.5);
+  background: rgba(40, 40, 50, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 197, 163, 0.05);
+}
+
+.hocw-ribbon-card-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(90deg, transparent, rgba(212, 197, 163, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.hocw-ribbon-card:hover .hocw-ribbon-card-glow {
+  opacity: 1;
+}
+
+.hocw-ribbon-card-content {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hocw-ribbon-card-icon {
+  font-size: 24px;
+  transition: transform 0.3s ease;
+}
+
+.hocw-ribbon-card:hover .hocw-ribbon-card-icon {
+  transform: scale(1.1);
+}
+
+.hocw-ribbon-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hocw-ribbon-card-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--hocw-ribbon-text);
+  transition: color 0.3s ease;
+}
+
+.hocw-ribbon-card:hover .hocw-ribbon-card-label {
+  color: var(--hocw-ribbon-accent);
+}
+
+.hocw-ribbon-card-prompt {
+  font-size: 12px;
+  color: var(--hocw-ribbon-text-muted);
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.3s ease;
+}
+
+.hocw-ribbon-card:hover .hocw-ribbon-card-prompt {
+  color: #b0b0b0;
+}
+
+.hocw-ribbon-card-arrow {
+  width: 20px;
+  height: 20px;
+  color: var(--hocw-ribbon-border);
+  flex-shrink: 0;
+  margin-top: 4px;
+  transition: all 0.3s ease;
+}
+
+.hocw-ribbon-card:hover .hocw-ribbon-card-arrow {
+  color: var(--hocw-ribbon-accent);
+  transform: translateX(4px);
+}
+
+/* Mobile: Auto-rotating spotlight */
+.hocw-ribbon-mobile {
+  display: block;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+}
+
+@media (min-width: 1024px) {
+  .hocw-ribbon-mobile {
+    display: none;
+  }
+}
+
+.hocw-ribbon-mobile-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(20, 20, 25, 1) 0%, rgba(20, 20, 25, 0.95) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+.hocw-ribbon-mobile-content {
+  position: relative;
+  padding: 24px 16px;
+}
+
+.hocw-ribbon-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.hocw-ribbon-mobile-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--hocw-ribbon-accent);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hocw-ribbon-mobile-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.hocw-ribbon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(100, 100, 110, 0.5);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hocw-ribbon-dot:hover {
+  background: rgba(100, 100, 110, 0.8);
+}
+
+.hocw-ribbon-dot--active {
+  width: 24px;
+  border-radius: 4px;
+  background: var(--hocw-ribbon-accent);
+}
+
+.hocw-ribbon-mobile-cards {
+  position: relative;
+  height: 120px;
+}
+
+.hocw-ribbon-mobile-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  text-align: left;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.hocw-ribbon-mobile-card--bg {
+  background: rgba(40, 40, 50, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 100, 110, 0.2);
+  pointer-events: none;
+}
+
+.hocw-ribbon-mobile-card--active {
+  background: rgba(40, 40, 50, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 197, 163, 0.3);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.hocw-ribbon-mobile-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hocw-ribbon-mobile-card-icon {
+  font-size: 30px;
+}
+
+.hocw-ribbon-mobile-card-text {
+  flex: 1;
+}
+
+.hocw-ribbon-mobile-card-text p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--hocw-ribbon-text);
+}
+
+.hocw-ribbon-mobile-card--bg .hocw-ribbon-mobile-card-text p {
+  color: #b0b0b0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hocw-ribbon-mobile-card-cta {
+  color: var(--hocw-ribbon-accent) !important;
+  font-size: 12px !important;
+  font-weight: 500;
+  margin-top: 8px !important;
+}
+
+.hocw-ribbon-mobile-pills {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hocw-ribbon-mobile-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.hocw-ribbon-pill {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 50px;
+  background: rgba(50, 50, 60, 0.6);
+  border: 1px solid rgba(100, 100, 110, 0.3);
+  color: var(--hocw-ribbon-text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.hocw-ribbon-pill:active {
+  background: rgba(50, 50, 60, 0.8);
+}
+
+/* ========================================
+   MOBILE RESPONSIVE
+   ======================================== */
+
+@media (max-width: 600px) {
+  .pcm-overlay {
+    padding: 0;
+    align-items: flex-end;
+    background: rgba(0, 0, 0, 0.4);
+    transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pcm-overlay--fullscreen {
+    background: #0b141a;
+  }
+
+  .pcm-theme--imessage.pcm-overlay--fullscreen,
+  .pcm-theme--imessage .pcm-overlay--fullscreen {
+    background: var(--pcm-im-bg-chat);
+  }
+
+  .pcm-modal-content {
+    width: 100%;
+    max-height: 82vh;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pcm-modal-content--fullscreen {
+    max-height: 100vh;
+    max-height: 100dvh;
+    height: 100%;
+  }
+
+  .pcm-minimize-btn {
+    top: -56px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    border: none;
+    color: #111b21;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .pcm-minimize-btn:hover {
+    background: #ffffff;
+    color: #111b21;
+    transform: scale(1.05);
+  }
+
+  .pcm-phone-frame {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 0;
+    animation: none;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
+    background: transparent;
+    transition: border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pcm-phone-notch {
+    display: none;
+  }
+
+  .pcm-embed {
+    height: calc(82vh - 8px);
+    max-height: none;
+    border-radius: 20px 20px 0 0;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pcm-embed--fullscreen {
+    position: fixed;
+    top: var(--viewport-offset, 0px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: auto;
+    max-height: 100%;
+    border-radius: 0;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Drag handle indicator for bottom sheet */
+  .pcm-embed::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+    z-index: 20;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pcm-theme--imessage .pcm-embed::before {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .pcm-embed--fullscreen::before {
+    opacity: 0.3;
+  }
+
+  .pcm-header {
+    padding: 12px 14px;
+    padding-top: 20px;
+    border-radius: 20px 20px 0 0;
+    touch-action: none;
+    cursor: grab;
+    transition: border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pcm-header:active {
+    cursor: grabbing;
+  }
+
+  .pcm-embed--fullscreen .pcm-header {
+    border-radius: 0;
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+  }
+
+  .pcm-phone-frame--fullscreen {
+    border-radius: 0;
+  }
+
+  /* Fade out minimize button in fullscreen */
+  .pcm-modal-content--fullscreen .pcm-minimize-btn {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .pcm-minimize-btn {
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+  }
+
+  /* Safe area padding for input in fullscreen */
+  .pcm-embed--fullscreen .pcm-input-area {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Ensure messages area takes remaining space in fullscreen */
+  .pcm-embed--fullscreen .pcm-messages {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .pcm-messages {
+    padding: 14px 12px;
+  }
+
+  .pcm-msg {
+    max-width: 88%;
+  }
+
+  .pcm-quick-grid {
+    gap: 8px;
+  }
+
+  .pcm-quick-card {
+    padding: 12px 14px;
+  }
+
+  .pcm-quick-card-text {
+    font-size: 13px;
+  }
+
+  .pcm-quick-card-subtext {
+    font-size: 11px;
+  }
+
+  .pcm-floating-cta {
+    padding: 7px 12px;
+    font-size: 11px;
+  }
+
+  .pcm-input-area {
+    padding: 10px 12px;
+  }
+
+  .pcm-send-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .pcm-hint {
+    padding: 8px 12px;
+  }
+
+  .pcm-reopen-btn {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    padding: 12px 18px;
+    font-size: 14px;
+  }
+}

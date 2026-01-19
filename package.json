@@ -1,0 +1,55 @@
+{
+  "name": "@hasky-os/chat-widget",
+  "version": "1.0.0",
+  "description": "Phone-style chat modal component with WhatsApp and iMessage themes",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./styles": "./src/styles/styles.css"
+  },
+  "files": [
+    "dist",
+    "src/styles",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "react",
+    "chat",
+    "modal",
+    "whatsapp",
+    "imessage",
+    "phone",
+    "widget"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hasky-os/hasky-os-chat-widget.git"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

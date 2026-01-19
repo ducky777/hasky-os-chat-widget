@@ -1,0 +1,287 @@
+# @hasky-os/chat-widget
+
+Phone-style chat modal component with WhatsApp and iMessage themes. Fully configurable and framework-agnostic (works with Next.js, React, etc.).
+
+## Installation
+
+```bash
+# From GitHub (private repo)
+npm install github:hasky-os/hasky-os-chat-widget
+
+# Or with npm link for local development
+cd /path/to/hasky-os-chat-widget
+npm link
+
+cd /path/to/your-project
+npm link @hasky-os/chat-widget
+```
+
+## Quick Start
+
+```tsx
+import { ChatModal, ChatModalProvider } from '@hasky-os/chat-widget';
+import '@hasky-os/chat-widget/styles';
+
+function App() {
+  return (
+    <ChatModalProvider>
+      <ChatModal
+        apiEndpoint="/api/chat"
+        theme="imessage"
+        storeName="My App"
+        welcomeMessage="Hello! How can I help you today?"
+        placeholder="Type a message..."
+        quickReplies={[
+          { text: "Tell me more", subtext: "about your service" },
+          { text: "Pricing info", subtext: "what does it cost?" },
+        ]}
+      />
+      {/* Your app content */}
+    </ChatModalProvider>
+  );
+}
+```
+
+## Components
+
+### `<ChatModal />`
+
+The main phone-style chat modal component.
+
+#### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `apiEndpoint` | `string` | **required** | API endpoint for chat requests |
+| `theme` | `'whatsapp' \| 'imessage'` | `'imessage'` | Chat UI theme |
+| `storeName` | `string` | `'Chat'` | Display name in header |
+| `requestParams` | `object` | `{}` | Additional params sent with each request (e.g., `vertical`, `intent`) |
+| `welcomeMessage` | `string` | `'Hello! How can I help you today?'` | Initial welcome message |
+| `placeholder` | `string` | `'Type a message...'` | Input placeholder text |
+| `quickReplies` | `QuickReply[]` | `[]` | Quick reply buttons shown before conversation |
+| `reopenButtonText` | `string` | `'Chat with us'` | Text for the floating reopen button |
+| `hintText` | `string` | `''` | Hint text below input |
+| `hiddenPaths` | `string[]` | `[]` | Paths where modal is completely hidden |
+| `minimizedByDefaultPaths` | `string[]` | `[]` | Paths where modal starts minimized |
+| `hideReopenButtonPaths` | `string[]` | `[]` | Paths where reopen button is hidden |
+| `pathname` | `string` | `''` | Current pathname (from router) |
+| `analytics` | `AnalyticsCallbacks` | `undefined` | Analytics event callbacks |
+| `persistence` | `PersistenceCallbacks` | `undefined` | Persistence callbacks |
+| `onCTAClick` | `() => void` | `undefined` | CTA button click handler |
+| `showCTA` | `boolean` | `false` | Show floating CTA button |
+| `ctaText` | `string` | `'Get Started'` | CTA button text |
+| `storageKeyPrefix` | `string` | `'hocw'` | localStorage key prefix |
+
+### `<FloatingPromptRibbon />`
+
+A floating prompt ribbon component (like on success-stories page).
+
+```tsx
+import { FloatingPromptRibbon, useChatModal } from '@hasky-os/chat-widget';
+
+function MyPage() {
+  const { openChat } = useChatModal();
+
+  return (
+    <FloatingPromptRibbon
+      prompts={[
+        { icon: "🌙", shortLabel: "Night Help", prompt: "Help me with night wakings" },
+        { icon: "😴", shortLabel: "Nap Tips", prompt: "My baby won't nap" },
+      ]}
+      onPromptClick={(prompt) => openChat(prompt)}
+      headerTitle="Quick Questions"
+      headerSubtitle="Tap to ask"
+    />
+  );
+}
+```
+
+#### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `prompts` | `FloatingPrompt[]` | **required** | Array of prompts to display |
+| `onPromptClick` | `(prompt: string) => void` | **required** | Click handler |
+| `autoRotateInterval` | `number` | `4000` | Auto-rotate interval in ms |
+| `headerTitle` | `string` | `'Quick prompts'` | Header title |
+| `headerSubtitle` | `string` | `undefined` | Header subtitle |
+| `className` | `string` | `''` | Additional CSS class |
+
+## Hooks
+
+### `useChatModal()`
+
+Access the chat modal context.
+
+```tsx
+const { openChat, pendingMessage, clearPendingMessage, isOpen, setIsOpen } = useChatModal();
+
+// Open chat with a pre-loaded message
+openChat("I need help with sleep training");
+
+// Open chat without a message
+openChat();
+```
+
+### `useChat(options)`
+
+Low-level hook for chat state management (used internally by ChatModal).
+
+```tsx
+const {
+  messages,
+  isLoading,
+  isStreaming,
+  streamingMessage,
+  suggestedResponses,
+  sendMessage,
+  startNewChat,
+  clearMessages,
+  error,
+} = useChat({
+  apiEndpoint: '/api/chat',
+  requestParams: { vertical: 'SAGE' },
+});
+```
+
+## Configuration Examples
+
+### With Next.js App Router
+
+```tsx
+// app/layout.tsx
+import { ChatModalProvider } from '@hasky-os/chat-widget';
+import '@hasky-os/chat-widget/styles';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <ChatModalProvider>
+          {children}
+        </ChatModalProvider>
+      </body>
+    </html>
+  );
+}
+
+// app/components/Chat.tsx
+'use client';
+
+import { usePathname } from 'next/navigation';
+import { ChatModal } from '@hasky-os/chat-widget';
+
+export function Chat() {
+  const pathname = usePathname();
+
+  return (
+    <ChatModal
+      apiEndpoint="/api/chat"
+      theme="imessage"
+      storeName="My App"
+      pathname={pathname}
+      hiddenPaths={['/checkout', '/onboarding']}
+      minimizedByDefaultPaths={['/guides']}
+      hideReopenButtonPaths={['/success-stories']}
+      requestParams={{
+        vertical: 'MY_VERTICAL',
+        intent: 'NONE',
+      }}
+      analytics={{
+        onChatOpened: () => track('chat_opened'),
+        onChatMessageSent: (msg, count) => track('message_sent', { msg, count }),
+      }}
+    />
+  );
+}
+```
+
+### With Custom Persistence (Supabase)
+
+```tsx
+<ChatModal
+  apiEndpoint="/api/chat"
+  persistence={{
+    onSaveMessage: async (message, sessionId) => {
+      await supabase.from('messages').insert({
+        session_id: sessionId,
+        role: message.role,
+        content: message.content,
+      });
+    },
+    onSessionCreated: async (sessionId) => {
+      await supabase.from('sessions').insert({ id: sessionId });
+    },
+  }}
+/>
+```
+
+## API Contract
+
+The chat endpoint should accept POST requests with:
+
+```typescript
+{
+  session_id: string;
+  chat_session_id: string;
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  // ...plus any requestParams you pass
+}
+```
+
+And return SSE (Server-Sent Events) in one of these formats:
+
+```
+// FastAPI format
+data: {"chunk": "Hello"}
+data: {"chunk": " there"}
+data: {"done": true}
+
+// Vercel AI SDK format
+0:"Hello"
+0:" there"
+d:{"finishReason":"stop"}
+```
+
+## Theming
+
+The component uses CSS custom properties that you can override:
+
+```css
+:root {
+  /* WhatsApp Theme */
+  --pcm-wa-primary: #008069;
+  --pcm-wa-primary-light: #00a884;
+  /* ... */
+
+  /* iMessage Theme */
+  --pcm-im-primary: #007AFF;
+  --pcm-im-primary-light: #409CFF;
+  /* ... */
+
+  /* Floating Prompt Ribbon */
+  --hocw-ribbon-accent: #d4c5a3;
+  --hocw-ribbon-bg: rgba(30, 30, 35, 0.8);
+  /* ... */
+}
+```
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Watch mode
+npm run dev
+
+# Type check
+npm run typecheck
+```
+
+## License
+
+Private - All rights reserved
