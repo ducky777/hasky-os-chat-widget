@@ -1889,16 +1889,21 @@
 
   .pcm-embed--fullscreen {
     position: fixed;
-    top: var(--viewport-offset, 0px);
+    top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    height: auto;
-    max-height: 100%;
+    /* Use visual viewport height so container shrinks with keyboard */
+    height: var(--visual-viewport-height, 100vh);
+    height: var(--visual-viewport-height, 100dvh);
+    max-height: var(--visual-viewport-height, 100vh);
     border-radius: 0;
     z-index: 10000;
     display: flex;
     flex-direction: column;
+    /* Don't let keyboard push the layout - we handle it ourselves */
+    overflow: hidden;
+    /* Smooth transition when keyboard appears/disappears */
+    transition: height 0.15s ease-out, max-height 0.15s ease-out;
   }
 
   /* Drag handle indicator for bottom sheet */
@@ -1940,6 +1945,11 @@
   .pcm-embed--fullscreen .pcm-header {
     border-radius: 0;
     padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    /* Header stays fixed at top - keyboard doesn't push it */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-shrink: 0;
   }
 
   .pcm-phone-frame--fullscreen {
@@ -1958,17 +1968,27 @@
     transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
   }
 
-  /* Safe area padding for input in fullscreen */
+  /* Input area stays at bottom of flex container */
   .pcm-embed--fullscreen .pcm-input-area {
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     position: relative;
-    z-index: 1;
+    z-index: 10;
+    flex-shrink: 0;
+    /* Background ensures input is visible over any content */
+    background: var(--pcm-wa-bg-input);
   }
 
-  /* Ensure messages area takes remaining space in fullscreen */
+  /* iMessage theme input background in fullscreen */
+  .pcm-theme--imessage .pcm-embed--fullscreen .pcm-input-area {
+    background: var(--pcm-im-bg-input);
+  }
+
+  /* Messages area shrinks when keyboard opens - this is the ONLY thing that changes size */
   .pcm-embed--fullscreen .pcm-messages {
     flex: 1 1 0;
     min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .pcm-messages {

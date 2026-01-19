@@ -23,6 +23,7 @@ interface UseMobileModalReturn {
 
 /**
  * Hook for mobile modal behavior including scroll locking and fullscreen expansion
+ * Handles keyboard appearance without pushing content - only resizes the chat area
  */
 export function useMobileModal({
   isOpen,
@@ -30,7 +31,7 @@ export function useMobileModal({
   isFullScreen,
   setIsFullScreen,
 }: UseMobileModalOptions): UseMobileModalReturn {
-  // Handle body scroll locking on mobile
+  // Handle body scroll locking on mobile and keyboard handling
   useEffect(() => {
     if (!isHydrated) return;
 
@@ -44,17 +45,34 @@ export function useMobileModal({
       document.body.style.top = `-${window.scrollY}px`;
 
       // Set viewport height CSS variable for mobile keyboards
+      // This allows the chat area to resize without pushing header/input
       const setViewportHeight = () => {
-        const vh = window.visualViewport?.height || window.innerHeight;
-        document.documentElement.style.setProperty('--app-height', `${vh}px`);
+        const visualViewport = window.visualViewport;
+        const vh = visualViewport?.height || window.innerHeight;
+        const fullHeight = window.innerHeight;
 
-        // Calculate offset from top when keyboard opens
-        const offset = window.visualViewport?.offsetTop || 0;
+        // Set the visual viewport height (shrinks when keyboard opens)
+        document.documentElement.style.setProperty('--visual-viewport-height', `${vh}px`);
+        // Set the full viewport height (constant, doesn't change with keyboard)
+        document.documentElement.style.setProperty('--app-height', `${fullHeight}px`);
+
+        // Calculate keyboard height
+        const keyboardHeight = fullHeight - vh;
+        document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+
+        // Track if keyboard is open
+        document.documentElement.style.setProperty('--keyboard-open', keyboardHeight > 50 ? '1' : '0');
+
+        // Calculate offset from top when keyboard opens (for iOS scroll adjustment)
+        const offset = visualViewport?.offsetTop || 0;
         document.documentElement.style.setProperty('--viewport-offset', `${offset}px`);
       };
 
       setViewportHeight();
+
+      // Listen to both resize and scroll events on visualViewport
       window.visualViewport?.addEventListener('resize', setViewportHeight);
+      window.visualViewport?.addEventListener('scroll', setViewportHeight);
 
       return () => {
         // Restore body scroll
@@ -66,6 +84,12 @@ export function useMobileModal({
         window.scrollTo(0, parseInt(scrollY || '0') * -1);
 
         window.visualViewport?.removeEventListener('resize', setViewportHeight);
+        window.visualViewport?.removeEventListener('scroll', setViewportHeight);
+
+        // Clean up CSS variables
+        document.documentElement.style.removeProperty('--visual-viewport-height');
+        document.documentElement.style.removeProperty('--keyboard-height');
+        document.documentElement.style.removeProperty('--keyboard-open');
       };
     }
   }, [isOpen, isHydrated]);
