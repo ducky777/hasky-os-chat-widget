@@ -72,6 +72,7 @@ The main phone-style chat modal component.
 | `showCTA` | `boolean` | `false` | Show floating CTA button |
 | `ctaText` | `string` | `'Get Started'` | CTA button text |
 | `storageKeyPrefix` | `string` | `'hocw'` | localStorage key prefix |
+| `booking` | `BookingConfig` | `undefined` | Calendar booking feature configuration |
 
 ### `<FloatingPromptRibbon />`
 
@@ -246,6 +247,74 @@ export function Chat() {
     },
   }}
 />
+```
+
+### With Calendar Booking
+
+Enable an in-chat calendar booking feature that allows users to schedule appointments directly from the chat modal. A calendar icon appears in the header when enabled.
+
+```tsx
+<ChatModal
+  apiEndpoint="/api/chat"
+  booking={{
+    enabled: true,
+    title: 'Book a Consultation',
+    subtitle: 'Select a date for your appointment',
+    hintText: 'Available Monday - Friday, 9 AM - 5 PM',
+    timeSlots: [
+      '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM',
+      '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM',
+    ],
+    monthsAhead: 2,
+    onBookingSubmit: async ({ date, time, formData }) => {
+      // Submit to your booking API
+      await fetch('/api/bookings', {
+        method: 'POST',
+        body: JSON.stringify({
+          date: date.toISOString(),
+          time,
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          notes: formData.notes,
+        }),
+      });
+    },
+    onBookingOpened: () => track('booking_opened'),
+    onDateSelected: (date) => track('booking_date_selected', { date }),
+    onTimeSelected: (time) => track('booking_time_selected', { time }),
+    onBookingSubmitted: ({ date, time }) => track('booking_submitted', { date, time }),
+  }}
+/>
+```
+
+#### BookingConfig Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Enable/disable the booking feature |
+| `title` | `string` | `'Book an Appointment'` | Modal title |
+| `subtitle` | `string` | `'Select a date for your appointment'` | Modal subtitle |
+| `hintText` | `string` | `'Available Monday - Saturday, 9 AM - 5 PM'` | Hint text shown below calendar |
+| `timeSlots` | `string[]` | Default slots (9 AM - 5 PM) | Available time slots to display |
+| `monthsAhead` | `number` | `2` | How many months ahead users can book |
+| `onBookingSubmit` | `(data) => void \| Promise<void>` | `undefined` | Called when form is submitted (for API integration) |
+| `onBookingOpened` | `() => void` | `undefined` | Analytics: booking modal opened |
+| `onDateSelected` | `(date: Date) => void` | `undefined` | Analytics: date selected |
+| `onTimeSelected` | `(time: string) => void` | `undefined` | Analytics: time selected |
+| `onBookingSubmitted` | `(data) => void` | `undefined` | Analytics: booking confirmed |
+
+#### BookingFormData
+
+The form collects the following user data:
+
+```typescript
+interface BookingFormData {
+  name: string;   // Required
+  phone: string;  // Required
+  email: string;  // Optional
+  notes: string;  // Optional
+}
 ```
 
 ## API Contract
