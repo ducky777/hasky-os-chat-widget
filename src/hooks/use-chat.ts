@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { ChatMessage, UseChatOptions, UseChatReturn } from '../types';
+import type { ChatMessage, UseChatOptions, UseChatReturn, AnalyticsCallbacks } from '../types';
 
 interface SuggestedResponsesPayload {
   type: 'suggested_responses';
@@ -208,6 +208,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
     headers: customHeaders = {},
     storageKeyPrefix = 'hocw',
     persistence,
+    analytics,
   } = options;
 
   const storageKeys = getStorageKeys(storageKeyPrefix);
@@ -222,6 +223,14 @@ export function useChat(options: UseChatOptions): UseChatReturn {
   const sessionIdRef = useRef<string>('');
   const chatSessionIdRef = useRef<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
+  const requestStartTimeRef = useRef<number>(0);
+  const streamingStartTimeRef = useRef<number>(0);
+  const analyticsRef = useRef<AnalyticsCallbacks | undefined>(analytics);
+
+  // Keep analytics ref updated
+  useEffect(() => {
+    analyticsRef.current = analytics;
+  }, [analytics]);
 
   // Initialize session IDs and load cached chat on mount
   useEffect(() => {
@@ -233,6 +242,15 @@ export function useChat(options: UseChatOptions): UseChatReturn {
     if (cached && cached.chatSessionId === chatSessionIdRef.current) {
       setMessages(cached.messages);
       setSuggestedResponses(cached.suggestedResponses);
+
+      // Track session resumption if there were previous messages
+      if (cached.messages.length > 0) {
+        analyticsRef.current?.onSessionResumed?.({
+          previousMessageCount: cached.messages.length,
+          sessionId: sessionIdRef.current,
+          chatSessionId: chatSessionIdRef.current,
+        });
+      }
     }
 
     // Notify persistence of session
@@ -268,6 +286,9 @@ export function useChat(options: UseChatOptions): UseChatReturn {
       setStreamingMessage('');
       setSuggestedResponses([]); // Clear previous suggested responses
 
+      // Track request start time for response time analytics
+      requestStartTimeRef.current = Date.now();
+
       // Call persistence callback for user message
       persistence?.onSaveMessage?.(userMessage, chatSessionIdRef.current);
 
@@ -297,7 +318,15 @@ export function useChat(options: UseChatOptions): UseChatReturn {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.detail || `HTTP ${response.status}`);
+          const errorMessage = errorData.detail || `HTTP ${response.status}`;
+          // Track API error
+          analyticsRef.current?.onErrorOccurred?.({
+            error: errorMessage,
+            errorType: 'api',
+            sessionId: sessionIdRef.current,
+            chatSessionId: chatSessionIdRef.current,
+          });
+          throw new Error(errorMessage);
         }
 
         if (!response.body) {
@@ -306,6 +335,10 @@ export function useChat(options: UseChatOptions): UseChatReturn {
 
         setIsLoading(false);
         setIsStreaming(true);
+
+        // Track streaming start
+        streamingStartTimeRef.current = Date.now();
+        analyticsRef.current?.onStreamingStarted?.(sessionIdRef.current, chatSessionIdRef.current);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -331,6 +364,13 @@ export function useChat(options: UseChatOptions): UseChatReturn {
             if (!parsed) continue;
 
             if (parsed.error) {
+              // Track streaming error
+              analyticsRef.current?.onErrorOccurred?.({
+                error: parsed.error,
+                errorType: 'api',
+                sessionId: sessionIdRef.current,
+                chatSessionId: chatSessionIdRef.current,
+              });
               throw new Error(parsed.error);
             }
 
@@ -361,6 +401,15 @@ export function useChat(options: UseChatOptions): UseChatReturn {
           }
         }
 
+        // Track streaming end
+        const streamingDurationMs = Date.now() - streamingStartTimeRef.current;
+        analyticsRef.current?.onStreamingEnded?.({
+          durationMs: streamingDurationMs,
+          messageLength: fullResponse.length,
+          sessionId: sessionIdRef.current,
+          chatSessionId: chatSessionIdRef.current,
+        });
+
         // Create the assistant message and extract suggestions
         if (fullResponse) {
           // Use SSE-received suggestions first, fall back to parsing from content
@@ -382,6 +431,15 @@ export function useChat(options: UseChatOptions): UseChatReturn {
           };
           setMessages((prev) => [...prev, assistantMessage]);
 
+          // Track message received
+          const responseTimeMs = Date.now() - requestStartTimeRef.current;
+          analyticsRef.current?.onMessageReceived?.({
+            responseTimeMs,
+            messageLength: cleanContent.length,
+            sessionId: sessionIdRef.current,
+            chatSessionId: chatSessionIdRef.current,
+          });
+
           // Call persistence callback for assistant message
           persistence?.onSaveMessage?.(assistantMessage, chatSessionIdRef.current);
 
@@ -398,6 +456,16 @@ export function useChat(options: UseChatOptions): UseChatReturn {
 
         const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
         setError(errorMessage);
+
+        // Track error if not already tracked (network errors)
+        if (!(err instanceof Error && (err.message.includes('HTTP') || err.message.includes('No response body')))) {
+          analyticsRef.current?.onErrorOccurred?.({
+            error: errorMessage,
+            errorType: err instanceof TypeError ? 'network' : 'unknown',
+            sessionId: sessionIdRef.current,
+            chatSessionId: chatSessionIdRef.current,
+          });
+        }
       } finally {
         setIsLoading(false);
         setIsStreaming(false);
@@ -408,13 +476,24 @@ export function useChat(options: UseChatOptions): UseChatReturn {
     [messages, isLoading, isStreaming, apiEndpoint, requestParams, customHeaders, persistence]
   );
 
-  const clearMessages = useCallback(() => {
+  const clearMessages = useCallback((trackAnalytics = true) => {
+    const previousMessageCount = messages.length;
+
     setMessages([]);
     setError(null);
     setStreamingMessage('');
     setSuggestedResponses([]);
     clearChatStorage(storageKeys.messages);
-  }, [storageKeys.messages]);
+
+    // Track chat cleared (only if there were messages and tracking is enabled)
+    if (trackAnalytics && previousMessageCount > 0) {
+      analyticsRef.current?.onChatCleared?.({
+        previousMessageCount,
+        sessionId: sessionIdRef.current,
+        chatSessionId: chatSessionIdRef.current,
+      });
+    }
+  }, [storageKeys.messages, messages.length]);
 
   const startNewChat = useCallback(() => {
     // Cancel any ongoing request
@@ -422,7 +501,8 @@ export function useChat(options: UseChatOptions): UseChatReturn {
       abortControllerRef.current.abort();
     }
 
-    clearMessages();
+    // Clear messages but don't double-track (onNewChatStarted will be called separately)
+    clearMessages(false);
     chatSessionIdRef.current = createNewChatSessionId(storageKeys.chatSessionId);
 
     // Notify persistence of new session

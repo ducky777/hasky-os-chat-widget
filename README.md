@@ -249,6 +249,99 @@ export function Chat() {
 />
 ```
 
+### With Full Analytics (PostHog Example)
+
+The widget provides comprehensive analytics callbacks for tracking user engagement, conversion funnels, and session intelligence.
+
+```tsx
+<ChatModal
+  apiEndpoint="/api/chat"
+  analytics={{
+    // Core chat events
+    onChatOpened: () => posthog.capture('chat_opened'),
+    onChatMinimized: () => posthog.capture('chat_minimized'),
+    onChatFirstMessage: (message) => posthog.capture('chat_first_message', { message }),
+    onChatMessageSent: (message, count, sessionId, chatSessionId) =>
+      posthog.capture('chat_message_sent', { message, count, sessionId, chatSessionId }),
+    onQuickReplyClicked: (text) => posthog.capture('quick_reply_clicked', { text }),
+    onSuggestedResponseClicked: (text) => posthog.capture('suggested_response_clicked', { text }),
+    onNewChatStarted: (sessionId) => posthog.capture('new_chat_started', { sessionId }),
+    onCTAClicked: () => posthog.capture('cta_clicked'),
+
+    // Engagement & UX metrics
+    onMessageReceived: ({ responseTimeMs, messageLength, sessionId, chatSessionId }) =>
+      posthog.capture('message_received', { responseTimeMs, messageLength, sessionId, chatSessionId }),
+    onStreamingStarted: (sessionId, chatSessionId) =>
+      posthog.capture('streaming_started', { sessionId, chatSessionId }),
+    onStreamingEnded: ({ durationMs, messageLength, sessionId, chatSessionId }) =>
+      posthog.capture('streaming_ended', { durationMs, messageLength, sessionId, chatSessionId }),
+    onErrorOccurred: ({ error, errorType, sessionId, chatSessionId }) =>
+      posthog.capture('chat_error', { error, errorType, sessionId, chatSessionId }),
+    onTypingStarted: (sessionId, chatSessionId) =>
+      posthog.capture('typing_started', { sessionId, chatSessionId }),
+    onTypingAbandoned: ({ partialMessage, typingDurationMs, sessionId, chatSessionId }) =>
+      posthog.capture('typing_abandoned', { partialMessage, typingDurationMs, sessionId, chatSessionId }),
+
+    // Conversion & funnel
+    onConversationCompleted: ({ messageCount, sessionDurationMs, sessionId, chatSessionId }) =>
+      posthog.capture('conversation_completed', { messageCount, sessionDurationMs, sessionId, chatSessionId }),
+
+    // Session intelligence
+    onSessionResumed: ({ previousMessageCount, sessionId, chatSessionId }) =>
+      posthog.capture('session_resumed', { previousMessageCount, sessionId, chatSessionId }),
+    onChatCleared: ({ previousMessageCount, sessionId, chatSessionId }) =>
+      posthog.capture('chat_cleared', { previousMessageCount, sessionId, chatSessionId }),
+    onMessageCopied: ({ messageRole, messageLength, sessionId, chatSessionId }) =>
+      posthog.capture('message_copied', { messageRole, messageLength, sessionId, chatSessionId }),
+
+    // Mobile-specific
+    onFullScreenEntered: (sessionId, chatSessionId) =>
+      posthog.capture('fullscreen_entered', { sessionId, chatSessionId }),
+    onFullScreenExited: (sessionId, chatSessionId) =>
+      posthog.capture('fullscreen_exited', { sessionId, chatSessionId }),
+    onSwipeMinimized: (sessionId, chatSessionId) =>
+      posthog.capture('swipe_minimized', { sessionId, chatSessionId }),
+
+    // Response quality
+    onLinkClicked: ({ url, linkText, sessionId, chatSessionId }) =>
+      posthog.capture('link_clicked', { url, linkText, sessionId, chatSessionId }),
+  }}
+/>
+```
+
+#### AnalyticsCallbacks Reference
+
+| Callback | Parameters | Description |
+|----------|------------|-------------|
+| **Core Events** | | |
+| `onChatOpened` | `()` | Chat modal opened |
+| `onChatMinimized` | `()` | Chat modal minimized |
+| `onChatFirstMessage` | `(message)` | First message sent in session |
+| `onChatMessageSent` | `(message, count, sessionId?, chatSessionId?)` | Any message sent |
+| `onQuickReplyClicked` | `(text)` | Quick reply button clicked |
+| `onSuggestedResponseClicked` | `(text)` | AI-suggested response clicked |
+| `onNewChatStarted` | `(sessionId)` | New chat session started |
+| `onCTAClicked` | `()` | CTA button clicked |
+| **Engagement & UX** | | |
+| `onMessageReceived` | `({ responseTimeMs, messageLength, sessionId?, chatSessionId? })` | AI response received |
+| `onStreamingStarted` | `(sessionId?, chatSessionId?)` | Streaming response started |
+| `onStreamingEnded` | `({ durationMs, messageLength, sessionId?, chatSessionId? })` | Streaming completed |
+| `onErrorOccurred` | `({ error, errorType, sessionId?, chatSessionId? })` | Error occurred (network/api/timeout/unknown) |
+| `onTypingStarted` | `(sessionId?, chatSessionId?)` | User started typing |
+| `onTypingAbandoned` | `({ partialMessage, typingDurationMs, sessionId?, chatSessionId? })` | User typed but didn't send |
+| **Conversion** | | |
+| `onConversationCompleted` | `({ messageCount, sessionDurationMs, sessionId?, chatSessionId? })` | 3+ message exchanges completed |
+| **Session Intelligence** | | |
+| `onSessionResumed` | `({ previousMessageCount, sessionId?, chatSessionId? })` | Returning user resumed chat |
+| `onChatCleared` | `({ previousMessageCount, sessionId?, chatSessionId? })` | User cleared/started new chat |
+| `onMessageCopied` | `({ messageRole, messageLength, sessionId?, chatSessionId? })` | User copied a message |
+| **Mobile** | | |
+| `onFullScreenEntered` | `(sessionId?, chatSessionId?)` | Chat expanded to fullscreen |
+| `onFullScreenExited` | `(sessionId?, chatSessionId?)` | Chat exited fullscreen |
+| `onSwipeMinimized` | `(sessionId?, chatSessionId?)` | User swiped to minimize |
+| **Response Quality** | | |
+| `onLinkClicked` | `({ url, linkText?, sessionId?, chatSessionId? })` | User clicked link in AI response |
+
 ### With Calendar Booking
 
 Enable an in-chat calendar booking feature that allows users to schedule appointments directly from the chat modal. A calendar icon appears in the header when enabled.
@@ -302,7 +395,9 @@ Enable an in-chat calendar booking feature that allows users to schedule appoint
 | `onBookingOpened` | `() => void` | `undefined` | Analytics: booking modal opened |
 | `onDateSelected` | `(date: Date) => void` | `undefined` | Analytics: date selected |
 | `onTimeSelected` | `(time: string) => void` | `undefined` | Analytics: time selected |
-| `onBookingSubmitted` | `(data) => void` | `undefined` | Analytics: booking confirmed |
+| `onBookingSubmitted` | `(data) => void` | `undefined` | Analytics: booking form submitted |
+| `onBookingCompleted` | `({ date, time, bookingDurationMs }) => void` | `undefined` | Analytics: booking flow completed successfully |
+| `onBookingAbandoned` | `({ abandonedAtStep, hadDateSelected, hadTimeSelected, durationMs }) => void` | `undefined` | Analytics: user closed booking without completing |
 
 #### BookingFormData
 

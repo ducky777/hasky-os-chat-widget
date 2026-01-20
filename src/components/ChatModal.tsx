@@ -22,15 +22,34 @@ const STORAGE_KEY_SUFFIX = '-minimized';
 interface MessageBubbleProps {
   message: ChatMessage;
   chatStyle: ChatStyle;
+  onLinkClick?: (url: string, linkText?: string) => void;
 }
 
-function MessageBubble({ message, chatStyle }: MessageBubbleProps) {
+function MessageBubble({ message, chatStyle, onLinkClick }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const time = new Date().toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true
   });
+
+  // Custom link renderer to track clicks
+  const linkRenderer = useCallback(({ href, children }: { href?: string; children?: React.ReactNode }) => {
+    const handleClick = () => {
+      if (href && onLinkClick) {
+        onLinkClick(href, typeof children === 'string' ? children : undefined);
+      }
+    };
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
+        {children}
+      </a>
+    );
+  }, [onLinkClick]);
+
+  const markdownComponents = {
+    a: linkRenderer,
+  };
 
   if (!isUser && message.content.includes('\n\n')) {
     const parts = message.content.split('\n\n').filter(part => part.trim());
@@ -40,7 +59,7 @@ function MessageBubble({ message, chatStyle }: MessageBubbleProps) {
           <div key={`${message.id}-${index}`} className="pcm-msg pcm-msg--received">
             <div className="pcm-msg-bubble pcm-msg-bubble--received">
               <div className="pcm-msg-text pcm-msg-text--markdown">
-                <ReactMarkdown>{part.trim()}</ReactMarkdown>
+                <ReactMarkdown components={markdownComponents}>{part.trim()}</ReactMarkdown>
               </div>
               {index === parts.length - 1 && (
                 <span className="pcm-msg-meta">
@@ -61,7 +80,7 @@ function MessageBubble({ message, chatStyle }: MessageBubbleProps) {
           <p className="pcm-msg-text">{message.content}</p>
         ) : (
           <div className="pcm-msg-text pcm-msg-text--markdown">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents}>{message.content}</ReactMarkdown>
           </div>
         )}
         <span className="pcm-msg-meta">
@@ -204,6 +223,12 @@ export function ChatModal({
   const headerRef = useRef<HTMLDivElement>(null);
   const messageCountRef = useRef(0);
   const hasTrackedFirstMessageRef = useRef(false);
+  // Typing analytics tracking
+  const typingStartTimeRef = useRef<number | null>(null);
+  const hasTrackedTypingStartRef = useRef(false);
+  // Conversation timing
+  const conversationStartTimeRef = useRef<number | null>(null);
+  const hasTrackedConversationCompletedRef = useRef(false);
 
   const {
     messages,
@@ -219,6 +244,7 @@ export function ChatModal({
     headers,
     storageKeyPrefix,
     persistence,
+    analytics,
   });
 
   // Mobile modal behavior (scroll locking, fullscreen expansion)
@@ -302,12 +328,60 @@ export function ChatModal({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Track conversation completion (6+ messages = 3+ exchanges)
+  useEffect(() => {
+    // Start timing when first message is sent
+    if (messages.length === 1 && !conversationStartTimeRef.current) {
+      conversationStartTimeRef.current = Date.now();
+    }
+
+    // Track conversation completed when 6+ messages (3 user + 3 assistant)
+    if (messages.length >= 6 && !hasTrackedConversationCompletedRef.current) {
+      hasTrackedConversationCompletedRef.current = true;
+      const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
+      const chatSessionId = sessionStorage.getItem(`${storageKeyPrefix}_chat_session_id`) || '';
+      const sessionDurationMs = conversationStartTimeRef.current
+        ? Date.now() - conversationStartTimeRef.current
+        : 0;
+
+      analytics?.onConversationCompleted?.({
+        messageCount: messages.length,
+        sessionDurationMs,
+        sessionId,
+        chatSessionId,
+      });
+    }
+  }, [messages.length, storageKeyPrefix, analytics]);
+
+  // Track typing abandoned when modal closes with unsent text
+  useEffect(() => {
+    if (!isModalOpen && inputValue.trim() && typingStartTimeRef.current) {
+      const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
+      const chatSessionId = sessionStorage.getItem(`${storageKeyPrefix}_chat_session_id`) || '';
+      const typingDurationMs = Date.now() - typingStartTimeRef.current;
+
+      analytics?.onTypingAbandoned?.({
+        partialMessage: inputValue.trim(),
+        typingDurationMs,
+        sessionId,
+        chatSessionId,
+      });
+
+      // Reset typing state
+      typingStartTimeRef.current = null;
+      hasTrackedTypingStartRef.current = false;
+    }
+  }, [isModalOpen, inputValue, storageKeyPrefix, analytics]);
+
   const handleNewChat = useCallback(() => {
     setMenuOpen(false);
     startNewChat();
     setUserHasInteracted(false);
     messageCountRef.current = 0;
     hasTrackedFirstMessageRef.current = false;
+    // Reset conversation tracking
+    conversationStartTimeRef.current = null;
+    hasTrackedConversationCompletedRef.current = false;
     // Track new chat session
     const newSessionId = sessionStorage.getItem(`${storageKeyPrefix}_chat_session_id`) || '';
     analytics?.onNewChatStarted?.(newSessionId);
@@ -338,12 +412,51 @@ export function ChatModal({
     messageCountRef.current += 1;
     analytics?.onChatMessageSent?.(messageContent, messageCountRef.current, sessionId, chatSessionId);
 
+    // Reset typing tracking (message was sent, not abandoned)
+    typingStartTimeRef.current = null;
+    hasTrackedTypingStartRef.current = false;
+
     if (!userHasInteracted) setUserHasInteracted(true);
     sendMessage(messageContent);
     setInputValue('');
     // Expand to fullscreen on mobile when user sends a message
     expandToFullScreen();
   }, [inputValue, userHasInteracted, sendMessage, expandToFullScreen, storageKeyPrefix, analytics]);
+
+  // Handle input change with typing tracking
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value.slice(0, 500);
+    setInputValue(newValue);
+
+    // Track typing started (only once per typing session)
+    if (newValue.trim() && !hasTrackedTypingStartRef.current) {
+      hasTrackedTypingStartRef.current = true;
+      typingStartTimeRef.current = Date.now();
+      const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
+      const chatSessionId = sessionStorage.getItem(`${storageKeyPrefix}_chat_session_id`) || '';
+      analytics?.onTypingStarted?.(sessionId, chatSessionId);
+    }
+
+    // Reset tracking if input is cleared
+    if (!newValue.trim() && typingStartTimeRef.current) {
+      // Track typing abandoned if user clears input after typing
+      const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
+      const chatSessionId = sessionStorage.getItem(`${storageKeyPrefix}_chat_session_id`) || '';
+      const typingDurationMs = Date.now() - typingStartTimeRef.current;
+
+      if (typingDurationMs > 1000) { // Only track if they typed for more than 1 second
+        analytics?.onTypingAbandoned?.({
+          partialMessage: inputValue.trim(), // Use previous value before clear
+          typingDurationMs,
+          sessionId,
+          chatSessionId,
+        });
+      }
+
+      typingStartTimeRef.current = null;
+      hasTrackedTypingStartRef.current = false;
+    }
+  }, [storageKeyPrefix, analytics, inputValue]);
 
   const handleQuickReply = useCallback((text: string) => {
     const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
@@ -425,6 +538,18 @@ export function ChatModal({
     booking?.onBookingOpened?.();
   }, [booking]);
 
+  // Handle link click in messages
+  const handleLinkClick = useCallback((url: string, linkText?: string) => {
+    const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
+    const chatSessionId = sessionStorage.getItem(`${storageKeyPrefix}_chat_session_id`) || '';
+    analytics?.onLinkClicked?.({
+      url,
+      linkText,
+      sessionId,
+      chatSessionId,
+    });
+  }, [storageKeyPrefix, analytics]);
+
   // Touch handlers for swipe gestures on mobile
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!isMobileDevice()) return;
@@ -454,20 +579,25 @@ export function ChatModal({
     setIsDragging(false);
 
     const threshold = 80;
+    const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
+    const chatSessionId = sessionStorage.getItem(`${storageKeyPrefix}_chat_session_id`) || '';
 
     if (isFullScreen && dragOffset > threshold) {
       // Exit fullscreen
       setIsFullScreen(false);
+      analytics?.onFullScreenExited?.(sessionId, chatSessionId);
     } else if (!isFullScreen && dragOffset < -threshold) {
       // Enter fullscreen
       setIsFullScreen(true);
+      analytics?.onFullScreenEntered?.(sessionId, chatSessionId);
     } else if (!isFullScreen && dragOffset > threshold) {
-      // Minimize
+      // Minimize via swipe
+      analytics?.onSwipeMinimized?.(sessionId, chatSessionId);
       handleMinimize();
     }
 
     setDragOffset(0);
-  }, [isDragging, dragOffset, isFullScreen, handleMinimize]);
+  }, [isDragging, dragOffset, isFullScreen, handleMinimize, storageKeyPrefix, analytics]);
 
   // Don't render on hidden paths or before hydration
   if (shouldHide || !isHydrated) {
@@ -597,7 +727,7 @@ export function ChatModal({
                   )}
 
                   {messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} chatStyle={theme} />
+                    <MessageBubble key={message.id} message={message} chatStyle={theme} onLinkClick={handleLinkClick} />
                   ))}
 
                   {isStreaming && streamingMessage && (
@@ -643,7 +773,7 @@ export function ChatModal({
                       className="pcm-input"
                       placeholder={placeholder}
                       value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value.slice(0, 500))}
+                      onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
                       disabled={isLoading || isStreaming}
                       maxLength={500}

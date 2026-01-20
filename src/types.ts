@@ -46,6 +46,7 @@ export interface ChatRequestParams {
  * Analytics event callbacks
  */
 export interface AnalyticsCallbacks {
+  // Core chat events
   onChatOpened?: () => void;
   onChatMinimized?: () => void;
   onChatFirstMessage?: (message: string) => void;
@@ -54,6 +55,87 @@ export interface AnalyticsCallbacks {
   onSuggestedResponseClicked?: (text: string) => void;
   onNewChatStarted?: (sessionId: string) => void;
   onCTAClicked?: () => void;
+
+  // Engagement & UX metrics
+  /** Called when an AI response is received */
+  onMessageReceived?: (data: {
+    responseTimeMs: number;
+    messageLength: number;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+  /** Called when streaming starts */
+  onStreamingStarted?: (sessionId?: string, chatSessionId?: string) => void;
+  /** Called when streaming ends */
+  onStreamingEnded?: (data: {
+    durationMs: number;
+    messageLength: number;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+  /** Called when an error occurs */
+  onErrorOccurred?: (data: {
+    error: string;
+    errorType: 'network' | 'api' | 'timeout' | 'unknown';
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+  /** Called when user starts typing */
+  onTypingStarted?: (sessionId?: string, chatSessionId?: string) => void;
+  /** Called when user typed but didn't send (input cleared or modal closed) */
+  onTypingAbandoned?: (data: {
+    partialMessage: string;
+    typingDurationMs: number;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+
+  // Conversion & funnel
+  /** Called when a meaningful conversation is completed (3+ message exchanges) */
+  onConversationCompleted?: (data: {
+    messageCount: number;
+    sessionDurationMs: number;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+
+  // Session intelligence
+  /** Called when a returning user resumes a previous chat */
+  onSessionResumed?: (data: {
+    previousMessageCount: number;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+  /** Called when user clears/starts new chat */
+  onChatCleared?: (data: {
+    previousMessageCount: number;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+  /** Called when user copies a message */
+  onMessageCopied?: (data: {
+    messageRole: 'user' | 'assistant';
+    messageLength: number;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
+
+  // Mobile-specific
+  /** Called when chat expands to fullscreen (mobile) */
+  onFullScreenEntered?: (sessionId?: string, chatSessionId?: string) => void;
+  /** Called when chat exits fullscreen (mobile) */
+  onFullScreenExited?: (sessionId?: string, chatSessionId?: string) => void;
+  /** Called when user swipes to minimize (mobile) */
+  onSwipeMinimized?: (sessionId?: string, chatSessionId?: string) => void;
+
+  // Response quality
+  /** Called when user clicks a link in AI response */
+  onLinkClicked?: (data: {
+    url: string;
+    linkText?: string;
+    sessionId?: string;
+    chatSessionId?: string;
+  }) => void;
 }
 
 /**
@@ -183,6 +265,8 @@ export interface UseChatOptions {
   storageKeyPrefix?: string;
   /** Persistence callbacks */
   persistence?: PersistenceCallbacks;
+  /** Analytics callbacks */
+  analytics?: AnalyticsCallbacks;
 }
 
 /**
@@ -244,5 +328,18 @@ export interface BookingConfig {
     time: string;
     hasEmail: boolean;
     hasNotes: boolean;
+  }) => void;
+  /** Analytics callback when booking flow is completed successfully */
+  onBookingCompleted?: (data: {
+    date: Date;
+    time: string;
+    bookingDurationMs: number;
+  }) => void;
+  /** Analytics callback when user abandons booking (opened but closed without submitting) */
+  onBookingAbandoned?: (data: {
+    abandonedAtStep: 'date_selection' | 'time_selection' | 'form_entry';
+    hadDateSelected: boolean;
+    hadTimeSelected: boolean;
+    durationMs: number;
   }) => void;
 }

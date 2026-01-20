@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { BookingConfig, BookingFormData } from '../types';
 
 // Default time slots
@@ -73,6 +73,18 @@ export function AppointmentBookingModal({ isOpen, onClose, config }: Appointment
   const [formData, setFormData] = useState<BookingFormData>({ name: '', phone: '', email: '', notes: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Analytics tracking refs
+  const bookingOpenedTimeRef = useRef<number | null>(null);
+  const bookingCompletedRef = useRef(false);
+
+  // Track when booking modal opens
+  useEffect(() => {
+    if (isOpen && !bookingOpenedTimeRef.current) {
+      bookingOpenedTimeRef.current = Date.now();
+      bookingCompletedRef.current = false;
+    }
+  }, [isOpen]);
+
   const timeSlots = config?.timeSlots || DEFAULT_TIME_SLOTS;
   const title = config?.title || 'Book an Appointment';
   const subtitle = config?.subtitle || 'Select a date for your appointment';
@@ -143,6 +155,17 @@ export function AppointmentBookingModal({ isOpen, onClose, config }: Appointment
         hasNotes: !!formData.notes,
       });
 
+      // Track booking completed
+      bookingCompletedRef.current = true;
+      const bookingDurationMs = bookingOpenedTimeRef.current
+        ? Date.now() - bookingOpenedTimeRef.current
+        : 0;
+      config?.onBookingCompleted?.({
+        date: selectedDate,
+        time: selectedTime,
+        bookingDurationMs,
+      });
+
       setStep('success');
     } catch {
       // Handle error - could add error state here
@@ -152,6 +175,21 @@ export function AppointmentBookingModal({ isOpen, onClose, config }: Appointment
   };
 
   const handleClose = () => {
+    // Track booking abandoned if not completed and not on success screen
+    if (!bookingCompletedRef.current && step !== 'success' && bookingOpenedTimeRef.current) {
+      const durationMs = Date.now() - bookingOpenedTimeRef.current;
+      let abandonedAtStep: 'date_selection' | 'time_selection' | 'form_entry' = 'date_selection';
+      if (step === 'time') abandonedAtStep = 'time_selection';
+      else if (step === 'form') abandonedAtStep = 'form_entry';
+
+      config?.onBookingAbandoned?.({
+        abandonedAtStep,
+        hadDateSelected: !!selectedDate,
+        hadTimeSelected: !!selectedTime,
+        durationMs,
+      });
+    }
+
     onClose();
     // Reset state after animation
     setTimeout(() => {
@@ -159,6 +197,9 @@ export function AppointmentBookingModal({ isOpen, onClose, config }: Appointment
       setSelectedDate(null);
       setSelectedTime(null);
       setFormData({ name: '', phone: '', email: '', notes: '' });
+      // Reset tracking refs
+      bookingOpenedTimeRef.current = null;
+      bookingCompletedRef.current = false;
     }, 300);
   };
 
