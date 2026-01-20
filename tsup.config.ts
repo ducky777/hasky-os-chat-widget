@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import { copyFileSync, mkdirSync } from 'fs';
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -9,4 +10,9 @@ export default defineConfig({
   clean: true,
   external: ['react', 'react-dom'],
   injectStyle: false,
+  onSuccess: async () => {
+    // Copy CSS file to dist
+    mkdirSync('dist/styles', { recursive: true });
+    copyFileSync('src/styles/styles.css', 'dist/styles.css');
+  },
 });
