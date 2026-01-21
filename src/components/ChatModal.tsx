@@ -214,7 +214,7 @@ export function ChatModal({
   dynamicProductSuggestions,
 }: ChatModalProps) {
   const storageKey = `${storageKeyPrefix}${STORAGE_KEY_SUFFIX}`;
-  const { pendingMessage, clearPendingMessage } = useChatModal();
+  const { pendingMessage, clearPendingMessage, isOpen: contextIsOpen } = useChatModal();
   const [isModalOpen, setIsModalOpen] = useState(true);
   const [isMinimizing, setIsMinimizing] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -283,6 +283,26 @@ export function ChatModal({
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [isModalOpen, isHydrated, storageKey, analytics]);
+
+  // Sync with context isOpen state (allows external control via useChatModal().setIsOpen)
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    if (contextIsOpen && !isModalOpen) {
+      // Context wants modal open, but it's closed - open it
+      setIsModalOpen(true);
+      analytics?.onChatOpened?.();
+    } else if (!contextIsOpen && isModalOpen) {
+      // Context wants modal closed, but it's open - minimize it
+      setIsMinimizing(true);
+      analytics?.onChatMinimized?.();
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setIsMinimizing(false);
+        localStorage.setItem(storageKey, 'true');
+      }, 200);
+    }
+  }, [contextIsOpen, isModalOpen, isHydrated, storageKey, analytics]);
 
   // Handle pending message from context - send it when modal opens
   useEffect(() => {
