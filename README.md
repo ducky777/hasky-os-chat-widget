@@ -19,7 +19,7 @@ npm link @ducky777/chat-widget
 ## Quick Start
 
 ```tsx
-import { ChatModal, ChatModalProvider } from '@ducky777/chat-widget';
+import { ChatModal, ChatModalProvider, FeaturedProductsCarousel } from '@ducky777/chat-widget';
 import '@ducky777/chat-widget/styles';
 
 function App() {
@@ -73,6 +73,36 @@ The main phone-style chat modal component.
 | `ctaText` | `string` | `'Get Started'` | CTA button text |
 | `storageKeyPrefix` | `string` | `'hocw'` | localStorage key prefix |
 | `booking` | `BookingConfig` | `undefined` | Calendar booking feature configuration |
+| `productSuggestions` | `ProductSuggestionsConfig` | `undefined` | Featured product suggestions configuration |
+
+### `<FeaturedProductsCarousel />`
+
+A carousel component for displaying featured product suggestions within the chat. Can be used standalone or integrated via the `productSuggestions` prop on ChatModal.
+
+```tsx
+import { FeaturedProductsCarousel } from '@ducky777/chat-widget';
+import type { ProductSuggestionsConfig } from '@ducky777/chat-widget';
+
+const config: ProductSuggestionsConfig = {
+  enabled: true,
+  headerText: 'Featured Products',
+  products: [
+    {
+      id: '1',
+      name: 'Baby Sleep Guide',
+      price: 29.99,
+      originalPrice: 49.99,
+      image: '/images/sleep-guide.jpg',
+      slug: 'baby-sleep-guide',
+    },
+    // more products...
+  ],
+  onAddToCart: (product) => console.log('Added to cart:', product),
+  onProductClick: (product) => router.push(`/products/${product.slug}`),
+};
+
+<FeaturedProductsCarousel config={config} />
+```
 
 ### `<FloatingPromptRibbon />`
 
@@ -409,6 +439,87 @@ interface BookingFormData {
   phone: string;  // Required
   email: string;  // Optional
   notes: string;  // Optional
+}
+```
+
+### With Product Suggestions
+
+Display featured products within the chat widget. Products can be provided statically or fetched from an API endpoint. Useful for e-commerce applications to showcase relevant products during conversations.
+
+```tsx
+<ChatModal
+  apiEndpoint="/api/chat"
+  productSuggestions={{
+    enabled: true,
+    headerText: 'Recommended for You',
+    products: [
+      {
+        id: 'prod-1',
+        name: 'Baby Sleep Training eBook',
+        price: 19.99,
+        originalPrice: 29.99,  // Shows discount badge
+        image: '/images/ebook-cover.jpg',
+        slug: 'sleep-training-ebook',
+      },
+      {
+        id: 'prod-2',
+        name: 'White Noise Machine',
+        price: 49.99,
+        image: '/images/white-noise.jpg',
+        slug: 'white-noise-machine',
+      },
+    ],
+    onAddToCart: (product) => {
+      // Add product to your cart system
+      addToCart(product.id);
+      toast.success(`${product.name} added to cart!`);
+    },
+    onProductClick: (product) => {
+      // Navigate to product detail page
+      router.push(`/products/${product.slug}`);
+    },
+  }}
+/>
+```
+
+#### Fetching Products from API
+
+Instead of providing static products, you can fetch them from an API endpoint:
+
+```tsx
+<ChatModal
+  apiEndpoint="/api/chat"
+  productSuggestions={{
+    enabled: true,
+    apiEndpoint: '/api/featured-products',  // Returns { products: Product[] }
+    headerText: 'Featured Products',
+    onAddToCart: (product) => addToCart(product.id),
+    onProductClick: (product) => router.push(`/products/${product.slug}`),
+  }}
+/>
+```
+
+#### ProductSuggestionsConfig Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Enable/disable product suggestions |
+| `products` | `Product[]` | `[]` | Static list of products to display |
+| `apiEndpoint` | `string` | `undefined` | API endpoint to fetch products (alternative to static list) |
+| `headerText` | `string` | `'Featured Products'` | Header text above the carousel |
+| `onAddToCart` | `(product: Product) => void` | `undefined` | Callback when add to cart button is clicked |
+| `onProductClick` | `(product: Product) => void` | `undefined` | Callback when product image is clicked |
+
+#### Product Type
+
+```typescript
+interface Product {
+  id: string;           // Unique product identifier
+  name: string;         // Product display name
+  price: number;        // Current price
+  originalPrice?: number; // Original price (shows discount badge if higher than price)
+  image: string;        // Product image URL
+  slug?: string;        // URL-friendly identifier for routing
 }
 ```
 
