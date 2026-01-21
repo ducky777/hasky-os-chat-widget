@@ -7,6 +7,7 @@ import { useMobileModal, isMobileDevice } from '../hooks/use-mobile-modal';
 import { useChatModal } from '../context/ChatModalContext';
 import type { ChatModalProps, ChatMessage, ChatStyle, QuickReply } from '../types';
 import { AppointmentBookingModal, CalendarHeaderIcon } from './AppointmentBookingModal';
+import { FeaturedProductsCarousel } from './FeaturedProductsCarousel';
 
 // Default values
 const DEFAULT_WELCOME_MESSAGE = "Hello! How can I help you today?";
@@ -201,6 +202,9 @@ export function ChatModal({
 
   // Booking configuration
   booking,
+
+  // Product suggestions configuration
+  productSuggestions,
 }: ChatModalProps) {
   const storageKey = `${storageKeyPrefix}${STORAGE_KEY_SUFFIX}`;
   const { pendingMessage, clearPendingMessage } = useChatModal();
@@ -722,6 +726,11 @@ export function ChatModal({
                             </button>
                           ))}
                         </div>
+                      )}
+
+                      {/* Product suggestions carousel */}
+                      {productSuggestions?.enabled && (
+                        <FeaturedProductsCarousel config={productSuggestions} />
                       )}
                     </>
                   )}

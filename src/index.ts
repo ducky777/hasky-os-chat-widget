@@ -2,6 +2,7 @@
 export { ChatModal } from './components/ChatModal';
 export { FloatingPromptRibbon } from './components/FloatingPromptRibbon';
 export { AppointmentBookingModal, CalendarHeaderIcon } from './components/AppointmentBookingModal';
+export { FeaturedProductsCarousel } from './components/FeaturedProductsCarousel';
 
 // Context & Provider
 export { ChatModalProvider, useChatModal, ChatModalContext } from './context/ChatModalContext';
@@ -26,4 +27,6 @@ export type {
   UseChatReturn,
   BookingFormData,
   BookingConfig,
+  Product,
+  ProductSuggestionsConfig,
 } from './types';

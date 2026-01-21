@@ -1,4 +1,34 @@
 /**
+ * Product type for featured products
+ */
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  slug?: string;
+}
+
+/**
+ * Product suggestions configuration
+ */
+export interface ProductSuggestionsConfig {
+  /** Enable product suggestions feature */
+  enabled?: boolean;
+  /** API endpoint to fetch featured products */
+  apiEndpoint?: string;
+  /** Static list of products (alternative to API) */
+  products?: Product[];
+  /** Header text for the product suggestions section */
+  headerText?: string;
+  /** Called when a product is added to cart */
+  onAddToCart?: (product: Product) => void;
+  /** Called when a product image is clicked */
+  onProductClick?: (product: Product) => void;
+}
+
+/**
  * Chat message type
  */
 export interface ChatMessage {
@@ -215,6 +245,10 @@ export interface ChatModalProps {
   // Booking configuration
   /** Calendar booking feature configuration */
   booking?: BookingConfig;
+
+  // Product suggestions configuration
+  /** Featured product suggestions configuration */
+  productSuggestions?: ProductSuggestionsConfig;
 }
 
 /**
