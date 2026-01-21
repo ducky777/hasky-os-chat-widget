@@ -8,6 +8,14 @@ export interface Product {
   originalPrice?: number;
   image: string;
   slug?: string;
+  /** Currency code (default: 'SGD') */
+  currency?: string;
+  /** Whether the product is in stock (default: true) */
+  inStock?: boolean;
+  /** Quantity/pack size (e.g., "12-pack", "Box of 36") */
+  quantity?: string;
+  /** Product variant (e.g., "Large", "Ultra Thin") */
+  variant?: string;
 }
 
 /**

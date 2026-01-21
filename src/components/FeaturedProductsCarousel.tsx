@@ -9,6 +9,27 @@ interface FeaturedProductCardProps {
   onImageClick?: (product: Product) => void;
 }
 
+// Currency symbols mapping
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  SGD: 'S$',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  MYR: 'RM',
+  AUD: 'A$',
+  JPY: '¥',
+  CNY: '¥',
+  HKD: 'HK$',
+  THB: '฿',
+  PHP: '₱',
+  INR: '₹',
+  KRW: '₩',
+};
+
+function getCurrencySymbol(currency: string = 'SGD'): string {
+  return CURRENCY_SYMBOLS[currency.toUpperCase()] || currency + ' ';
+}
+
 function FeaturedProductCard({
   product,
   onAddToCart,
@@ -17,8 +38,11 @@ function FeaturedProductCard({
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
+  const isInStock = product.inStock !== false; // Default to true
+  const currencySymbol = getCurrencySymbol(product.currency);
+
   const handleAddToCart = () => {
-    if (!onAddToCart) return;
+    if (!onAddToCart || !isInStock) return;
     setIsAdding(true);
     onAddToCart(product);
 
@@ -35,7 +59,7 @@ function FeaturedProductCard({
     : 0;
 
   return (
-    <div className="pcm-product-card">
+    <div className={`pcm-product-card ${!isInStock ? 'pcm-product-card--out-of-stock' : ''}`}>
       <div
         className="pcm-product-image-wrap pcm-product-image-wrap--clickable"
         onClick={() => onImageClick?.(product)}
@@ -48,8 +72,11 @@ function FeaturedProductCard({
           alt={product.name}
           className="pcm-product-image"
         />
-        {hasDiscount && (
+        {hasDiscount && isInStock && (
           <span className="pcm-product-badge">-{discountPercent}%</span>
+        )}
+        {!isInStock && (
+          <span className="pcm-product-badge pcm-product-badge--out-of-stock">Out of Stock</span>
         )}
         <div className="pcm-product-view-hint">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -61,21 +88,30 @@ function FeaturedProductCard({
       </div>
       <div className="pcm-product-info">
         <h4 className="pcm-product-name">{product.name}</h4>
+        {(product.quantity || product.variant) && (
+          <p className="pcm-product-meta">
+            {product.variant && <span className="pcm-product-variant">{product.variant}</span>}
+            {product.variant && product.quantity && <span className="pcm-product-meta-separator">·</span>}
+            {product.quantity && <span className="pcm-product-quantity">{product.quantity}</span>}
+          </p>
+        )}
         <div className="pcm-product-price-row">
-          <span className="pcm-product-price">${product.price.toFixed(2)}</span>
+          <span className="pcm-product-price">{currencySymbol}{product.price.toFixed(2)}</span>
           {hasDiscount && (
             <span className="pcm-product-original-price">
-              ${product.originalPrice!.toFixed(2)}
+              {currencySymbol}{product.originalPrice!.toFixed(2)}
             </span>
           )}
         </div>
         {onAddToCart && (
           <button
-            className={`pcm-add-to-cart-btn ${justAdded ? 'pcm-add-to-cart-btn--success' : ''}`}
+            className={`pcm-add-to-cart-btn ${justAdded ? 'pcm-add-to-cart-btn--success' : ''} ${!isInStock ? 'pcm-add-to-cart-btn--disabled' : ''}`}
             onClick={handleAddToCart}
-            disabled={isAdding}
+            disabled={isAdding || !isInStock}
           >
-            {isAdding ? (
+            {!isInStock ? (
+              'Out of Stock'
+            ) : isAdding ? (
               <span className="pcm-cart-spinner" />
             ) : justAdded ? (
               <>
