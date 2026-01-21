@@ -1,17 +1,23 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { ChatMessage, UseChatOptions, UseChatReturn, AnalyticsCallbacks } from '../types';
+import type { ChatMessage, UseChatOptions, UseChatReturn, AnalyticsCallbacks, ProductSuggestion } from '../types';
 
 interface SuggestedResponsesPayload {
   type: 'suggested_responses';
   suggested_responses: string[];
 }
 
+interface ProductSuggestionsPayload {
+  type: 'product_suggestions';
+  products: ProductSuggestion[];
+}
+
 interface StoredChatData {
   chatSessionId: string;
   messages: ChatMessage[];
   suggestedResponses: string[];
+  productSuggestions: ProductSuggestion[];
 }
 
 function generateId(): string {
@@ -79,7 +85,8 @@ function saveChatToStorage(
   storageKey: string,
   chatSessionId: string,
   messages: ChatMessage[],
-  suggestedResponses: string[]
+  suggestedResponses: string[],
+  productSuggestions: ProductSuggestion[]
 ): void {
   if (typeof window === 'undefined') return;
 
@@ -87,6 +94,7 @@ function saveChatToStorage(
     chatSessionId,
     messages,
     suggestedResponses,
+    productSuggestions,
   };
   localStorage.setItem(storageKey, JSON.stringify(data));
 }
@@ -148,12 +156,63 @@ function parseSuggestedResponses(content: string): {
 }
 
 /**
+ * Parse product suggestions from message content.
+ * Looks for JSON blocks with format: {"type": "product_suggestions", "products": [...]}
+ */
+function parseProductSuggestions(content: string): {
+  cleanContent: string;
+  productSuggestions: ProductSuggestion[];
+} {
+  const productSuggestions: ProductSuggestion[] = [];
+  let cleanContent = content;
+
+  // Pattern to match JSON blocks with product_suggestions
+  const jsonPattern = /```json\s*(\{[\s\S]*?"type"\s*:\s*"product_suggestions"[\s\S]*?\})\s*```/g;
+  const plainJsonPattern = /(\{[\s\S]*?"type"\s*:\s*"product_suggestions"[\s\S]*?\})/g;
+
+  // Try to find JSON in code blocks first
+  const match = jsonPattern.exec(content);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1]) as ProductSuggestionsPayload;
+      if (parsed.type === 'product_suggestions' && Array.isArray(parsed.products)) {
+        productSuggestions.push(...parsed.products);
+        cleanContent = content.replace(match[0], '').trim();
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  // If no code block found, try plain JSON (at end of message)
+  if (productSuggestions.length === 0) {
+    const matches = content.match(plainJsonPattern);
+    if (matches) {
+      for (const jsonStr of matches) {
+        try {
+          const parsed = JSON.parse(jsonStr) as ProductSuggestionsPayload;
+          if (parsed.type === 'product_suggestions' && Array.isArray(parsed.products)) {
+            productSuggestions.push(...parsed.products);
+            cleanContent = content.replace(jsonStr, '').trim();
+            break; // Only use first valid match
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }
+
+  return { cleanContent, productSuggestions };
+}
+
+/**
  * Parse SSE data from the chat API response.
  * Handles both "data: {...}" format (FastAPI) and "0:..." format (Vercel AI SDK)
  */
 function parseSSELine(
   line: string
-): { chunk?: string; done?: boolean; error?: string; suggestedResponses?: string[] } | null {
+): { chunk?: string; done?: boolean; error?: string; suggestedResponses?: string[]; productSuggestions?: ProductSuggestion[] } | null {
   // Handle FastAPI SSE format: "data: {...}"
   if (line.startsWith('data: ')) {
     try {
@@ -161,6 +220,10 @@ function parseSSELine(
       // Handle suggested_responses event
       if (data.type === 'suggested_responses' && Array.isArray(data.suggested_responses)) {
         return { suggestedResponses: data.suggested_responses };
+      }
+      // Handle product_suggestions event
+      if (data.type === 'product_suggestions' && Array.isArray(data.products)) {
+        return { productSuggestions: data.products };
       }
       return data;
     } catch {
@@ -219,6 +282,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
   const [streamingMessage, setStreamingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [suggestedResponses, setSuggestedResponses] = useState<string[]>([]);
+  const [productSuggestions, setProductSuggestions] = useState<ProductSuggestion[]>([]);
 
   const sessionIdRef = useRef<string>('');
   const chatSessionIdRef = useRef<string>('');
@@ -242,6 +306,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
     if (cached && cached.chatSessionId === chatSessionIdRef.current) {
       setMessages(cached.messages);
       setSuggestedResponses(cached.suggestedResponses);
+      setProductSuggestions(cached.productSuggestions || []);
 
       // Track session resumption if there were previous messages
       if (cached.messages.length > 0) {
@@ -260,9 +325,9 @@ export function useChat(options: UseChatOptions): UseChatReturn {
   // Save chat to localStorage whenever messages or responses change
   useEffect(() => {
     if (chatSessionIdRef.current && messages.length > 0) {
-      saveChatToStorage(storageKeys.messages, chatSessionIdRef.current, messages, suggestedResponses);
+      saveChatToStorage(storageKeys.messages, chatSessionIdRef.current, messages, suggestedResponses, productSuggestions);
     }
-  }, [messages, suggestedResponses, storageKeys.messages]);
+  }, [messages, suggestedResponses, productSuggestions, storageKeys.messages]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -285,6 +350,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
       setError(null);
       setStreamingMessage('');
       setSuggestedResponses([]); // Clear previous suggested responses
+      setProductSuggestions([]); // Clear previous product suggestions
 
       // Track request start time for response time analytics
       requestStartTimeRef.current = Date.now();
@@ -345,6 +411,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
         let fullResponse = '';
         let buffer = '';
         let receivedSuggestedResponses: string[] = [];
+        let receivedProductSuggestions: ProductSuggestion[] = [];
 
         while (true) {
           const { done, value } = await reader.read();
@@ -384,6 +451,11 @@ export function useChat(options: UseChatOptions): UseChatReturn {
               receivedSuggestedResponses = parsed.suggestedResponses;
             }
 
+            // Handle product suggestions from SSE event
+            if (parsed.productSuggestions) {
+              receivedProductSuggestions = parsed.productSuggestions;
+            }
+
             if (parsed.done) {
               break;
             }
@@ -398,6 +470,9 @@ export function useChat(options: UseChatOptions): UseChatReturn {
           }
           if (parsed?.suggestedResponses) {
             receivedSuggestedResponses = parsed.suggestedResponses;
+          }
+          if (parsed?.productSuggestions) {
+            receivedProductSuggestions = parsed.productSuggestions;
           }
         }
 
@@ -414,6 +489,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
         if (fullResponse) {
           // Use SSE-received suggestions first, fall back to parsing from content
           let finalSuggestions = receivedSuggestedResponses;
+          let finalProductSuggestions = receivedProductSuggestions;
           let cleanContent = fullResponse;
 
           // If no SSE suggestions, try parsing from content (legacy support)
@@ -421,6 +497,13 @@ export function useChat(options: UseChatOptions): UseChatReturn {
             const parsed = parseSuggestedResponses(cleanContent);
             cleanContent = parsed.cleanContent;
             finalSuggestions = parsed.suggestedResponses;
+          }
+
+          // If no SSE product suggestions, try parsing from content (legacy support)
+          if (finalProductSuggestions.length === 0) {
+            const parsed = parseProductSuggestions(cleanContent);
+            cleanContent = parsed.cleanContent;
+            finalProductSuggestions = parsed.productSuggestions;
           }
 
           const assistantMessage: ChatMessage = {
@@ -446,6 +529,11 @@ export function useChat(options: UseChatOptions): UseChatReturn {
           // Set suggested responses if any were found
           if (finalSuggestions.length > 0) {
             setSuggestedResponses(finalSuggestions);
+          }
+
+          // Set product suggestions if any were found
+          if (finalProductSuggestions.length > 0) {
+            setProductSuggestions(finalProductSuggestions);
           }
         }
       } catch (err) {
@@ -483,6 +571,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
     setError(null);
     setStreamingMessage('');
     setSuggestedResponses([]);
+    setProductSuggestions([]);
     clearChatStorage(storageKeys.messages);
 
     // Track chat cleared (only if there were messages and tracking is enabled)
@@ -516,6 +605,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
     streamingMessage,
     error,
     suggestedResponses,
+    productSuggestions,
     sendMessage,
     clearMessages,
     startNewChat,

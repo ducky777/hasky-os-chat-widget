@@ -3,6 +3,7 @@ export { ChatModal } from './components/ChatModal';
 export { FloatingPromptRibbon } from './components/FloatingPromptRibbon';
 export { AppointmentBookingModal, CalendarHeaderIcon } from './components/AppointmentBookingModal';
 export { FeaturedProductsCarousel } from './components/FeaturedProductsCarousel';
+export { ProductSuggestionsCarousel } from './components/ProductSuggestionsCarousel';
 
 // Context & Provider
 export { ChatModalProvider, useChatModal, ChatModalContext } from './context/ChatModalContext';
@@ -28,5 +29,7 @@ export type {
   BookingFormData,
   BookingConfig,
   Product,
+  ProductSuggestion,
   ProductSuggestionsConfig,
+  DynamicProductSuggestionsConfig,
 } from './types';

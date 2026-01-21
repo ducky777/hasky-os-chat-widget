@@ -8,6 +8,7 @@ import { useChatModal } from '../context/ChatModalContext';
 import type { ChatModalProps, ChatMessage, ChatStyle, QuickReply } from '../types';
 import { AppointmentBookingModal, CalendarHeaderIcon } from './AppointmentBookingModal';
 import { FeaturedProductsCarousel } from './FeaturedProductsCarousel';
+import { ProductSuggestionsCarousel } from './ProductSuggestionsCarousel';
 
 // Default values
 const DEFAULT_WELCOME_MESSAGE = "Hello! How can I help you today?";
@@ -205,6 +206,9 @@ export function ChatModal({
 
   // Product suggestions configuration
   productSuggestions,
+
+  // Dynamic AI product suggestions configuration
+  dynamicProductSuggestions,
 }: ChatModalProps) {
   const storageKey = `${storageKeyPrefix}${STORAGE_KEY_SUFFIX}`;
   const { pendingMessage, clearPendingMessage } = useChatModal();
@@ -240,6 +244,7 @@ export function ChatModal({
     isStreaming,
     streamingMessage,
     suggestedResponses,
+    productSuggestions: aiProductSuggestions,
     sendMessage,
     startNewChat,
   } = useChat({
@@ -757,6 +762,14 @@ export function ChatModal({
                         </button>
                       ))}
                     </div>
+                  )}
+
+                  {/* AI Product Suggestions */}
+                  {hasStarted && !isLoading && !isStreaming && dynamicProductSuggestions?.enabled && aiProductSuggestions.length > 0 && (
+                    <ProductSuggestionsCarousel
+                      suggestions={aiProductSuggestions}
+                      config={dynamicProductSuggestions}
+                    />
                   )}
 
                   <div ref={messagesEndRef} />

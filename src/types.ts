@@ -16,10 +16,20 @@ export interface Product {
   quantity?: string;
   /** Product variant (e.g., "Large", "Ultra Thin") */
   variant?: string;
+  /** Available sizes for the product */
+  sizes?: string[];
 }
 
 /**
- * Product suggestions configuration
+ * Product suggestion from AI (received via SSE)
+ */
+export interface ProductSuggestion {
+  productId: string;
+  suggestedSize?: string;
+}
+
+/**
+ * Product suggestions configuration for static/featured products
  */
 export interface ProductSuggestionsConfig {
   /** Enable product suggestions feature */
@@ -31,7 +41,23 @@ export interface ProductSuggestionsConfig {
   /** Header text for the product suggestions section */
   headerText?: string;
   /** Called when a product is added to cart */
-  onAddToCart?: (product: Product) => void;
+  onAddToCart?: (product: Product, size?: string) => void;
+  /** Called when a product image is clicked */
+  onProductClick?: (product: Product) => void;
+}
+
+/**
+ * Dynamic product suggestions configuration (AI-suggested products)
+ */
+export interface DynamicProductSuggestionsConfig {
+  /** Enable dynamic AI product suggestions */
+  enabled?: boolean;
+  /** API endpoint to fetch all products (for resolving productIds) */
+  productsApiEndpoint: string;
+  /** Header text for the AI suggestions section */
+  headerText?: string;
+  /** Called when a product is added to cart */
+  onAddToCart?: (product: Product, size?: string) => void;
   /** Called when a product image is clicked */
   onProductClick?: (product: Product) => void;
 }
@@ -255,8 +281,12 @@ export interface ChatModalProps {
   booking?: BookingConfig;
 
   // Product suggestions configuration
-  /** Featured product suggestions configuration */
+  /** Featured product suggestions configuration (static) */
   productSuggestions?: ProductSuggestionsConfig;
+
+  // Dynamic AI product suggestions
+  /** Dynamic AI-suggested products configuration */
+  dynamicProductSuggestions?: DynamicProductSuggestionsConfig;
 }
 
 /**
@@ -320,6 +350,7 @@ export interface UseChatReturn {
   isStreaming: boolean;
   streamingMessage: string;
   suggestedResponses: string[];
+  productSuggestions: ProductSuggestion[];
   sendMessage: (content: string) => Promise<void>;
   startNewChat: () => void;
   clearMessages: () => void;

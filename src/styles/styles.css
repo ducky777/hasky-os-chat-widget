@@ -2302,3 +2302,75 @@
     font-size: 11px;
   }
 }
+
+/* ========================================
+   SIZE SELECTOR FOR PRODUCT SUGGESTIONS
+   ======================================== */
+
+.pcm-product-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.pcm-size-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid var(--pcm-wa-border-light);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--pcm-wa-text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pcm-size-btn:hover {
+  border-color: var(--pcm-wa-primary-light);
+  background: rgba(37, 211, 102, 0.05);
+}
+
+.pcm-size-btn--active {
+  border-color: var(--pcm-wa-primary-light);
+  background: var(--pcm-wa-primary-light);
+  color: #ffffff;
+}
+
+/* iMessage Theme Overrides for Size Selector */
+.pcm-theme--imessage .pcm-size-btn {
+  border-color: var(--pcm-im-border);
+}
+
+.pcm-theme--imessage .pcm-size-btn:hover {
+  border-color: var(--pcm-im-primary);
+  background: rgba(0, 122, 255, 0.05);
+}
+
+.pcm-theme--imessage .pcm-size-btn--active {
+  border-color: var(--pcm-im-primary);
+  background: var(--pcm-im-primary);
+  color: #ffffff;
+}
+
+/* Out of Stock Badge */
+.pcm-product-badge--out-of-stock {
+  background: #6b7280;
+  top: auto;
+  bottom: 8px;
+  left: 8px;
+}
+
+/* AI Product Suggestions Variant */
+.pcm-product-suggestions--ai .pcm-product-suggestions-header svg {
+  color: #ef4444;
+}
+
+/* Product Meta (quantity, variant) */
+.pcm-product-meta {
+  font-size: 11px;
+  color: var(--pcm-wa-text-secondary);
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
