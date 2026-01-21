@@ -204,6 +204,9 @@ export function ChatModal({
   // Booking configuration
   booking,
 
+  // Cart configuration
+  cart,
+
   // Product suggestions configuration
   productSuggestions,
 
@@ -664,6 +667,11 @@ export function ChatModal({
                     </span>
                   </div>
                   <div className="pcm-header-actions">
+                    {cart?.enabled && cart.renderButton && (
+                      <div className="pcm-header-cart-wrapper">
+                        {cart.renderButton}
+                      </div>
+                    )}
                     {booking?.enabled && (
                       <button
                         className="pcm-header-action pcm-header-action--booking"

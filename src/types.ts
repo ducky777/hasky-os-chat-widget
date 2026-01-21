@@ -280,6 +280,10 @@ export interface ChatModalProps {
   /** Calendar booking feature configuration */
   booking?: BookingConfig;
 
+  // Cart configuration
+  /** Cart button configuration for header */
+  cart?: CartConfig;
+
   // Product suggestions configuration
   /** Featured product suggestions configuration (static) */
   productSuggestions?: ProductSuggestionsConfig;
@@ -365,6 +369,20 @@ export interface BookingFormData {
   phone: string;
   email: string;
   notes: string;
+}
+
+/**
+ * Cart button configuration for the header
+ */
+export interface CartConfig {
+  /** Enable the cart button in the header */
+  enabled?: boolean;
+  /**
+   * Custom cart button/dropdown component to render.
+   * This should be your own cart component (e.g., CartDropdown).
+   * The component will be rendered in the header actions area.
+   */
+  renderButton: React.ReactNode;
 }
 
 /**

@@ -28,6 +28,7 @@ export type {
   UseChatReturn,
   BookingFormData,
   BookingConfig,
+  CartConfig,
   Product,
   ProductSuggestion,
   ProductSuggestionsConfig,

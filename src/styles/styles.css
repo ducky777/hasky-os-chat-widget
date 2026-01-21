@@ -1763,9 +1763,64 @@
   background: #e0e0e0;
 }
 
+/* Cart button wrapper in header */
+.pcm-header-cart-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Style the cart button to match header theme */
+.pcm-header-cart-wrapper > div > button,
+.pcm-header-cart-wrapper > button {
+  color: #ffffff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pcm-header-cart-wrapper > div > button:hover,
+.pcm-header-cart-wrapper > button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pcm-header-cart-wrapper > div > button svg,
+.pcm-header-cart-wrapper > button svg {
+  color: #ffffff;
+  width: 20px;
+  height: 20px;
+}
+
+/* Cart badge styling */
+.pcm-header-cart-wrapper > div > button span,
+.pcm-header-cart-wrapper > button span {
+  background: #ef4444;
+}
+
 /* Booking button in header */
 .pcm-header-action--booking {
   margin-right: 4px;
+}
+
+/* iMessage Theme Overrides for Cart */
+.pcm-theme--imessage .pcm-header-cart-wrapper > div > button,
+.pcm-theme--imessage .pcm-header-cart-wrapper > button {
+  color: var(--pcm-im-text);
+}
+
+.pcm-theme--imessage .pcm-header-cart-wrapper > div > button svg,
+.pcm-theme--imessage .pcm-header-cart-wrapper > button svg {
+  color: var(--pcm-im-text);
+}
+
+.pcm-theme--imessage .pcm-header-cart-wrapper > div > button:hover,
+.pcm-theme--imessage .pcm-header-cart-wrapper > button:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* iMessage Theme Overrides for Booking */

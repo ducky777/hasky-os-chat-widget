@@ -73,6 +73,7 @@ The main phone-style chat modal component.
 | `ctaText` | `string` | `'Get Started'` | CTA button text |
 | `storageKeyPrefix` | `string` | `'hocw'` | localStorage key prefix |
 | `booking` | `BookingConfig` | `undefined` | Calendar booking feature configuration |
+| `cart` | `CartConfig` | `undefined` | Cart button configuration for header |
 | `productSuggestions` | `ProductSuggestionsConfig` | `undefined` | Featured product suggestions configuration |
 
 ### `<FeaturedProductsCarousel />`
@@ -441,6 +442,43 @@ interface BookingFormData {
   notes: string;  // Optional
 }
 ```
+
+### With Cart Button
+
+Add a cart button to the chat header. This is useful for e-commerce applications where you want users to access their cart without leaving the chat.
+
+```tsx
+import { ChatModal, CartConfig } from '@ducky777/chat-widget';
+import { CartDropdown } from './components/CartDropdown'; // Your own cart component
+
+function App() {
+  const handleCheckout = () => {
+    // Handle checkout - e.g., open checkout modal or navigate
+    router.push('/checkout');
+  };
+
+  return (
+    <ChatModal
+      apiEndpoint="/api/chat"
+      cart={{
+        enabled: true,
+        renderButton: (
+          <CartDropdown onCheckout={handleCheckout} />
+        ),
+      }}
+    />
+  );
+}
+```
+
+#### CartConfig Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Enable/disable the cart button |
+| `renderButton` | `React.ReactNode` | **required** | Your cart component to render in the header |
+
+The `renderButton` prop accepts any React node, allowing you to use your own cart component that integrates with your cart state management (Context, Redux, Zustand, etc.). The widget provides styling to ensure the button fits the header theme.
 
 ### With Product Suggestions
 
