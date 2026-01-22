@@ -1,25 +1,87 @@
 # @ducky777/chat-widget
 
-Phone-style chat modal component with WhatsApp and iMessage themes. Fully configurable and framework-agnostic (works with Next.js, React, etc.).
+Phone-style chat modal component with WhatsApp and iMessage themes. Supports CDN embedding with full checkout flow for easy client integration.
 
-## Installation
+## Installation Options
 
-```bash
-# From GitHub (private repo)
-npm install github:ducky777/hasky-os-chat-widget
+### Option 1: CDN Embed (Recommended for Clients)
 
-# Or with npm link for local development
-cd /path/to/hasky-os-chat-widget
-npm link
+Add a single script tag to embed the widget on any website:
 
-cd /path/to/your-project
-npm link @ducky777/chat-widget
+```html
+<script src="https://widget.haskyos.com/v1/chat-widget.min.js"></script>
+<script>
+  ChatWidget.init({
+    clientId: 'your-client-id',
+    theme: 'whatsapp',
+    storeName: 'My Store',
+
+    // Products - provide a function to fetch your products
+    products: { enabled: true },
+    getProducts: async () => {
+      const res = await fetch('/api/my-products');
+      return res.json();
+    },
+
+    // Payment (optional)
+    payment: {
+      provider: 'stripe',  // or 'hitpay'
+      publicKey: 'pk_live_xxx'
+    },
+
+    // Booking calendar (optional)
+    booking: { enabled: true }
+  });
+
+  // Listen for events
+  ChatWidget.on('checkoutComplete', (result) => {
+    console.log('Order placed:', result.orderId);
+  });
+
+  ChatWidget.on('bookingComplete', (data) => {
+    console.log('Booking confirmed:', data);
+  });
+</script>
 ```
 
-## Quick Start
+### Option 2: npm Package (React Wrapper)
+
+For React/Next.js apps that want the CDN widget with a React-friendly API:
+
+```bash
+npm install github:ducky777/hasky-os-chat-widget
+```
 
 ```tsx
-import { ChatModal, ChatModalProvider, FeaturedProductsCarousel } from '@ducky777/chat-widget';
+import { ChatWidgetEmbed } from '@ducky777/chat-widget';
+
+function App() {
+  return (
+    <ChatWidgetEmbed
+      clientId="your-client-id"
+      theme="whatsapp"
+      storeName="My Store"
+      getProducts={async () => fetchProducts()}
+      payment={{ provider: 'stripe', publicKey: 'pk_live_xxx' }}
+      booking={{ enabled: true }}
+      onCheckoutComplete={(result) => {
+        router.push(`/order/${result.orderId}`);
+      }}
+    />
+  );
+}
+```
+
+### Option 3: Full React Component (Direct Integration)
+
+For apps that need full control over the chat modal:
+
+```bash
+npm install github:ducky777/hasky-os-chat-widget
+```
+
+```tsx
+import { ChatModal, ChatModalProvider } from '@ducky777/chat-widget';
 import '@ducky777/chat-widget/styles';
 
 function App() {
@@ -30,23 +92,152 @@ function App() {
         theme="imessage"
         storeName="My App"
         welcomeMessage="Hello! How can I help you today?"
-        placeholder="Type a message..."
-        quickReplies={[
-          { text: "Tell me more", subtext: "about your service" },
-          { text: "Pricing info", subtext: "what does it cost?" },
-        ]}
       />
-      {/* Your app content */}
     </ChatModalProvider>
   );
 }
 ```
 
-## Components
+---
+
+## CDN Widget API Reference
+
+### `ChatWidget.init(config)`
+
+Initialize the widget with configuration.
+
+```typescript
+interface ChatWidgetConfig {
+  // Required
+  clientId: string;              // Your client ID for authentication
+
+  // Optional
+  apiEndpoint?: string;          // Custom API endpoint (default: haskyos API)
+  theme?: 'whatsapp' | 'imessage';  // UI theme (default: 'imessage')
+  storeName?: string;            // Brand name in header (default: 'Chat')
+  primaryColor?: string;         // Accent color (hex)
+  welcomeMessage?: string;       // Initial welcome message
+  placeholder?: string;          // Input placeholder
+  quickReplies?: QuickReply[];   // Quick reply buttons
+  reopenButtonText?: string;     // Text on minimized button
+
+  // Features
+  booking?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    hintText?: string;
+    timeSlots?: string[];
+    monthsAhead?: number;
+  };
+
+  products?: {
+    enabled?: boolean;
+    headerText?: string;
+    enableAISuggestions?: boolean;
+  };
+
+  payment?: {
+    provider: 'stripe' | 'hitpay';
+    publicKey: string;
+  };
+
+  // Callbacks
+  getProducts?: () => Promise<Product[]> | Product[];
+}
+```
+
+### `ChatWidget.on(event, handler)`
+
+Register event listeners.
+
+| Event | Data | Description |
+|-------|------|-------------|
+| `ready` | `void` | Widget initialized |
+| `open` | `void` | Chat modal opened |
+| `close` | `void` | Chat modal closed |
+| `minimize` | `void` | Chat modal minimized |
+| `cartUpdated` | `CartState` | Cart contents changed |
+| `checkoutStarted` | `{ items }` | Checkout flow started |
+| `checkoutComplete` | `CheckoutResult` | Payment successful |
+| `checkoutFailed` | `{ error, code? }` | Payment failed |
+| `bookingSubmitted` | `{ date, time, formData }` | Booking form submitted |
+| `bookingComplete` | `{ date, time, formData, bookingId? }` | Booking confirmed |
+| `messageSent` | `{ message, messageCount }` | User sent a message |
+| `error` | `{ message, code? }` | Error occurred |
+
+### `ChatWidget.open(message?)`
+
+Open the chat modal, optionally with a pre-loaded message.
+
+### `ChatWidget.close()`
+
+Close/minimize the chat modal.
+
+### `ChatWidget.getCart()`
+
+Get current cart state.
+
+### `ChatWidget.addToCart(product, quantity?, size?)`
+
+Add item to cart programmatically.
+
+### `ChatWidget.clearCart()`
+
+Clear all items from cart.
+
+### `ChatWidget.destroy()`
+
+Remove the widget and clean up.
+
+---
+
+## ChatWidgetEmbed Props (React Wrapper)
+
+```tsx
+interface ChatWidgetEmbedProps {
+  clientId: string;              // Required
+
+  // Config (same as CDN)
+  apiEndpoint?: string;
+  theme?: 'whatsapp' | 'imessage';
+  storeName?: string;
+  primaryColor?: string;
+  welcomeMessage?: string;
+  placeholder?: string;
+  quickReplies?: QuickReply[];
+  reopenButtonText?: string;
+  booking?: EmbedBookingConfig;
+  products?: EmbedProductsConfig;
+  payment?: PaymentConfig;
+  getProducts?: () => Promise<Product[]> | Product[];
+
+  // Event callbacks
+  onReady?: () => void;
+  onOpen?: () => void;
+  onClose?: () => void;
+  onMinimize?: () => void;
+  onCartUpdated?: (cart: CartState) => void;
+  onCheckoutStarted?: (data: { items }) => void;
+  onCheckoutComplete?: (result: CheckoutResult) => void;
+  onCheckoutFailed?: (error: { error, code? }) => void;
+  onBookingSubmitted?: (data: { date, time, formData }) => void;
+  onBookingComplete?: (data: { date, time, formData, bookingId? }) => void;
+  onMessageSent?: (data: { message, messageCount }) => void;
+  onError?: (error: { message, code? }) => void;
+
+  // Custom CDN URL (optional)
+  cdnUrl?: string;
+}
+```
+
+---
+
+## Full React Component Reference
 
 ### `<ChatModal />`
 
-The main phone-style chat modal component.
+The main phone-style chat modal component for direct integration.
 
 #### Props
 
@@ -55,14 +246,14 @@ The main phone-style chat modal component.
 | `apiEndpoint` | `string` | **required** | API endpoint for chat requests |
 | `theme` | `'whatsapp' \| 'imessage'` | `'imessage'` | Chat UI theme |
 | `storeName` | `string` | `'Chat'` | Display name in header |
-| `requestParams` | `object` | `{}` | Additional params sent with each request (e.g., `vertical`, `intent`) |
-| `headers` | `Record<string, string>` | `{}` | Custom headers to send with each request (e.g., `Authorization`, `X-API-Key`) |
+| `requestParams` | `object` | `{}` | Additional params sent with each request |
+| `headers` | `Record<string, string>` | `{}` | Custom headers for requests |
 | `welcomeMessage` | `string` | `'Hello! How can I help you today?'` | Initial welcome message |
 | `placeholder` | `string` | `'Type a message...'` | Input placeholder text |
-| `quickReplies` | `QuickReply[]` | `[]` | Quick reply buttons shown before conversation |
-| `reopenButtonText` | `string` | `'Chat with us'` | Text for the floating reopen button |
+| `quickReplies` | `QuickReply[]` | `[]` | Quick reply buttons |
+| `reopenButtonText` | `string` | `'Chat with us'` | Text for reopen button |
 | `hintText` | `string` | `''` | Hint text below input |
-| `hiddenPaths` | `string[]` | `[]` | Paths where modal is completely hidden |
+| `hiddenPaths` | `string[]` | `[]` | Paths where modal is hidden |
 | `minimizedByDefaultPaths` | `string[]` | `[]` | Paths where modal starts minimized |
 | `hideReopenButtonPaths` | `string[]` | `[]` | Paths where reopen button is hidden |
 | `pathname` | `string` | `''` | Current pathname (from router) |
@@ -72,42 +263,41 @@ The main phone-style chat modal component.
 | `showCTA` | `boolean` | `false` | Show floating CTA button |
 | `ctaText` | `string` | `'Get Started'` | CTA button text |
 | `storageKeyPrefix` | `string` | `'hocw'` | localStorage key prefix |
-| `booking` | `BookingConfig` | `undefined` | Calendar booking feature configuration |
-| `cart` | `CartConfig` | `undefined` | Cart button configuration for header |
-| `productSuggestions` | `ProductSuggestionsConfig` | `undefined` | Featured product suggestions configuration |
+| `booking` | `BookingConfig` | `undefined` | Calendar booking configuration |
+| `cart` | `CartConfig` | `undefined` | Cart button configuration |
+| `productSuggestions` | `ProductSuggestionsConfig` | `undefined` | Product suggestions configuration |
+| `dynamicProductSuggestions` | `DynamicProductSuggestionsConfig` | `undefined` | AI product suggestions configuration |
 
 ### `<FeaturedProductsCarousel />`
 
-A carousel component for displaying featured product suggestions within the chat. Can be used standalone or integrated via the `productSuggestions` prop on ChatModal.
+A carousel component for displaying featured products.
 
 ```tsx
 import { FeaturedProductsCarousel } from '@ducky777/chat-widget';
-import type { ProductSuggestionsConfig } from '@ducky777/chat-widget';
 
-const config: ProductSuggestionsConfig = {
-  enabled: true,
-  headerText: 'Featured Products',
-  products: [
-    {
-      id: '1',
-      name: 'Baby Sleep Guide',
-      price: 29.99,
-      originalPrice: 49.99,
-      image: '/images/sleep-guide.jpg',
-      slug: 'baby-sleep-guide',
-    },
-    // more products...
-  ],
-  onAddToCart: (product) => console.log('Added to cart:', product),
-  onProductClick: (product) => router.push(`/products/${product.slug}`),
-};
-
-<FeaturedProductsCarousel config={config} />
+<FeaturedProductsCarousel
+  config={{
+    enabled: true,
+    headerText: 'Featured Products',
+    products: [
+      {
+        id: '1',
+        name: 'Product Name',
+        price: 29.99,
+        originalPrice: 49.99,
+        image: '/images/product.jpg',
+        slug: 'product-slug',
+      },
+    ],
+    onAddToCart: (product) => console.log('Add to cart:', product),
+    onProductClick: (product) => router.push(`/products/${product.slug}`),
+  }}
+/>
 ```
 
 ### `<FloatingPromptRibbon />`
 
-A floating prompt ribbon component (like on success-stories page).
+A floating prompt ribbon component.
 
 ```tsx
 import { FloatingPromptRibbon, useChatModal } from '@ducky777/chat-widget';
@@ -118,27 +308,17 @@ function MyPage() {
   return (
     <FloatingPromptRibbon
       prompts={[
-        { icon: "🌙", shortLabel: "Night Help", prompt: "Help me with night wakings" },
+        { icon: "🌙", shortLabel: "Night Help", prompt: "Help with night wakings" },
         { icon: "😴", shortLabel: "Nap Tips", prompt: "My baby won't nap" },
       ]}
       onPromptClick={(prompt) => openChat(prompt)}
       headerTitle="Quick Questions"
-      headerSubtitle="Tap to ask"
     />
   );
 }
 ```
 
-#### Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `prompts` | `FloatingPrompt[]` | **required** | Array of prompts to display |
-| `onPromptClick` | `(prompt: string) => void` | **required** | Click handler |
-| `autoRotateInterval` | `number` | `4000` | Auto-rotate interval in ms |
-| `headerTitle` | `string` | `'Quick prompts'` | Header title |
-| `headerSubtitle` | `string` | `undefined` | Header subtitle |
-| `className` | `string` | `''` | Additional CSS class |
+---
 
 ## Hooks
 
@@ -158,7 +338,7 @@ openChat();
 
 ### `useChat(options)`
 
-Low-level hook for chat state management (used internally by ChatModal).
+Low-level hook for chat state management.
 
 ```tsx
 const {
@@ -176,6 +356,8 @@ const {
   requestParams: { vertical: 'SAGE' },
 });
 ```
+
+---
 
 ## Configuration Examples
 
@@ -215,167 +397,12 @@ export function Chat() {
       pathname={pathname}
       hiddenPaths={['/checkout', '/onboarding']}
       minimizedByDefaultPaths={['/guides']}
-      hideReopenButtonPaths={['/success-stories']}
-      requestParams={{
-        vertical: 'MY_VERTICAL',
-        intent: 'NONE',
-      }}
-      analytics={{
-        onChatOpened: () => track('chat_opened'),
-        onChatMessageSent: (msg, count) => track('message_sent', { msg, count }),
-      }}
     />
   );
 }
 ```
 
-### With API Key Authentication
-
-```tsx
-// Option 1: Direct API key (for backend-to-backend or secure environments)
-<ChatModal
-  apiEndpoint="https://api.example.com/chat"
-  headers={{
-    'X-API-Key': process.env.NEXT_PUBLIC_CHAT_API_KEY!,
-  }}
-/>
-
-// Option 2: Bearer token authentication
-<ChatModal
-  apiEndpoint="https://api.example.com/chat"
-  headers={{
-    'Authorization': `Bearer ${accessToken}`,
-  }}
-/>
-
-// Option 3: Proxy through your own API (recommended for client-side apps)
-// This way the API key stays on your server, not exposed to the client
-<ChatModal
-  apiEndpoint="/api/chat"  // Your Next.js/Express API route
-  requestParams={{
-    vertical: 'MY_VERTICAL',
-  }}
-/>
-// Then in your /api/chat route, add the API key server-side:
-// headers: { 'X-API-Key': process.env.CHAT_API_KEY }
-```
-
-### With Custom Persistence (Supabase)
-
-```tsx
-<ChatModal
-  apiEndpoint="/api/chat"
-  persistence={{
-    onSaveMessage: async (message, sessionId) => {
-      await supabase.from('messages').insert({
-        session_id: sessionId,
-        role: message.role,
-        content: message.content,
-      });
-    },
-    onSessionCreated: async (sessionId) => {
-      await supabase.from('sessions').insert({ id: sessionId });
-    },
-  }}
-/>
-```
-
-### With Full Analytics (PostHog Example)
-
-The widget provides comprehensive analytics callbacks for tracking user engagement, conversion funnels, and session intelligence.
-
-```tsx
-<ChatModal
-  apiEndpoint="/api/chat"
-  analytics={{
-    // Core chat events
-    onChatOpened: () => posthog.capture('chat_opened'),
-    onChatMinimized: () => posthog.capture('chat_minimized'),
-    onChatFirstMessage: (message) => posthog.capture('chat_first_message', { message }),
-    onChatMessageSent: (message, count, sessionId, chatSessionId) =>
-      posthog.capture('chat_message_sent', { message, count, sessionId, chatSessionId }),
-    onQuickReplyClicked: (text) => posthog.capture('quick_reply_clicked', { text }),
-    onSuggestedResponseClicked: (text) => posthog.capture('suggested_response_clicked', { text }),
-    onNewChatStarted: (sessionId) => posthog.capture('new_chat_started', { sessionId }),
-    onCTAClicked: () => posthog.capture('cta_clicked'),
-
-    // Engagement & UX metrics
-    onMessageReceived: ({ responseTimeMs, messageLength, sessionId, chatSessionId }) =>
-      posthog.capture('message_received', { responseTimeMs, messageLength, sessionId, chatSessionId }),
-    onStreamingStarted: (sessionId, chatSessionId) =>
-      posthog.capture('streaming_started', { sessionId, chatSessionId }),
-    onStreamingEnded: ({ durationMs, messageLength, sessionId, chatSessionId }) =>
-      posthog.capture('streaming_ended', { durationMs, messageLength, sessionId, chatSessionId }),
-    onErrorOccurred: ({ error, errorType, sessionId, chatSessionId }) =>
-      posthog.capture('chat_error', { error, errorType, sessionId, chatSessionId }),
-    onTypingStarted: (sessionId, chatSessionId) =>
-      posthog.capture('typing_started', { sessionId, chatSessionId }),
-    onTypingAbandoned: ({ partialMessage, typingDurationMs, sessionId, chatSessionId }) =>
-      posthog.capture('typing_abandoned', { partialMessage, typingDurationMs, sessionId, chatSessionId }),
-
-    // Conversion & funnel
-    onConversationCompleted: ({ messageCount, sessionDurationMs, sessionId, chatSessionId }) =>
-      posthog.capture('conversation_completed', { messageCount, sessionDurationMs, sessionId, chatSessionId }),
-
-    // Session intelligence
-    onSessionResumed: ({ previousMessageCount, sessionId, chatSessionId }) =>
-      posthog.capture('session_resumed', { previousMessageCount, sessionId, chatSessionId }),
-    onChatCleared: ({ previousMessageCount, sessionId, chatSessionId }) =>
-      posthog.capture('chat_cleared', { previousMessageCount, sessionId, chatSessionId }),
-    onMessageCopied: ({ messageRole, messageLength, sessionId, chatSessionId }) =>
-      posthog.capture('message_copied', { messageRole, messageLength, sessionId, chatSessionId }),
-
-    // Mobile-specific
-    onFullScreenEntered: (sessionId, chatSessionId) =>
-      posthog.capture('fullscreen_entered', { sessionId, chatSessionId }),
-    onFullScreenExited: (sessionId, chatSessionId) =>
-      posthog.capture('fullscreen_exited', { sessionId, chatSessionId }),
-    onSwipeMinimized: (sessionId, chatSessionId) =>
-      posthog.capture('swipe_minimized', { sessionId, chatSessionId }),
-
-    // Response quality
-    onLinkClicked: ({ url, linkText, sessionId, chatSessionId }) =>
-      posthog.capture('link_clicked', { url, linkText, sessionId, chatSessionId }),
-  }}
-/>
-```
-
-#### AnalyticsCallbacks Reference
-
-| Callback | Parameters | Description |
-|----------|------------|-------------|
-| **Core Events** | | |
-| `onChatOpened` | `()` | Chat modal opened |
-| `onChatMinimized` | `()` | Chat modal minimized |
-| `onChatFirstMessage` | `(message)` | First message sent in session |
-| `onChatMessageSent` | `(message, count, sessionId?, chatSessionId?)` | Any message sent |
-| `onQuickReplyClicked` | `(text)` | Quick reply button clicked |
-| `onSuggestedResponseClicked` | `(text)` | AI-suggested response clicked |
-| `onNewChatStarted` | `(sessionId)` | New chat session started |
-| `onCTAClicked` | `()` | CTA button clicked |
-| **Engagement & UX** | | |
-| `onMessageReceived` | `({ responseTimeMs, messageLength, sessionId?, chatSessionId? })` | AI response received |
-| `onStreamingStarted` | `(sessionId?, chatSessionId?)` | Streaming response started |
-| `onStreamingEnded` | `({ durationMs, messageLength, sessionId?, chatSessionId? })` | Streaming completed |
-| `onErrorOccurred` | `({ error, errorType, sessionId?, chatSessionId? })` | Error occurred (network/api/timeout/unknown) |
-| `onTypingStarted` | `(sessionId?, chatSessionId?)` | User started typing |
-| `onTypingAbandoned` | `({ partialMessage, typingDurationMs, sessionId?, chatSessionId? })` | User typed but didn't send |
-| **Conversion** | | |
-| `onConversationCompleted` | `({ messageCount, sessionDurationMs, sessionId?, chatSessionId? })` | 3+ message exchanges completed |
-| **Session Intelligence** | | |
-| `onSessionResumed` | `({ previousMessageCount, sessionId?, chatSessionId? })` | Returning user resumed chat |
-| `onChatCleared` | `({ previousMessageCount, sessionId?, chatSessionId? })` | User cleared/started new chat |
-| `onMessageCopied` | `({ messageRole, messageLength, sessionId?, chatSessionId? })` | User copied a message |
-| **Mobile** | | |
-| `onFullScreenEntered` | `(sessionId?, chatSessionId?)` | Chat expanded to fullscreen |
-| `onFullScreenExited` | `(sessionId?, chatSessionId?)` | Chat exited fullscreen |
-| `onSwipeMinimized` | `(sessionId?, chatSessionId?)` | User swiped to minimize |
-| **Response Quality** | | |
-| `onLinkClicked` | `({ url, linkText?, sessionId?, chatSessionId? })` | User clicked link in AI response |
-
 ### With Calendar Booking
-
-Enable an in-chat calendar booking feature that allows users to schedule appointments directly from the chat modal. A calendar icon appears in the header when enabled.
 
 ```tsx
 <ChatModal
@@ -391,175 +418,36 @@ Enable an in-chat calendar booking feature that allows users to schedule appoint
     ],
     monthsAhead: 2,
     onBookingSubmit: async ({ date, time, formData }) => {
-      // Submit to your booking API
       await fetch('/api/bookings', {
         method: 'POST',
-        body: JSON.stringify({
-          date: date.toISOString(),
-          time,
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          notes: formData.notes,
-        }),
+        body: JSON.stringify({ date, time, ...formData }),
       });
     },
-    onBookingOpened: () => track('booking_opened'),
-    onDateSelected: (date) => track('booking_date_selected', { date }),
-    onTimeSelected: (time) => track('booking_time_selected', { time }),
-    onBookingSubmitted: ({ date, time }) => track('booking_submitted', { date, time }),
   }}
 />
 ```
 
-#### BookingConfig Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable/disable the booking feature |
-| `title` | `string` | `'Book an Appointment'` | Modal title |
-| `subtitle` | `string` | `'Select a date for your appointment'` | Modal subtitle |
-| `hintText` | `string` | `'Available Monday - Saturday, 9 AM - 5 PM'` | Hint text shown below calendar |
-| `timeSlots` | `string[]` | Default slots (9 AM - 5 PM) | Available time slots to display |
-| `monthsAhead` | `number` | `2` | How many months ahead users can book |
-| `onBookingSubmit` | `(data) => void \| Promise<void>` | `undefined` | Called when form is submitted (for API integration) |
-| `onBookingOpened` | `() => void` | `undefined` | Analytics: booking modal opened |
-| `onDateSelected` | `(date: Date) => void` | `undefined` | Analytics: date selected |
-| `onTimeSelected` | `(time: string) => void` | `undefined` | Analytics: time selected |
-| `onBookingSubmitted` | `(data) => void` | `undefined` | Analytics: booking form submitted |
-| `onBookingCompleted` | `({ date, time, bookingDurationMs }) => void` | `undefined` | Analytics: booking flow completed successfully |
-| `onBookingAbandoned` | `({ abandonedAtStep, hadDateSelected, hadTimeSelected, durationMs }) => void` | `undefined` | Analytics: user closed booking without completing |
-
-#### BookingFormData
-
-The form collects the following user data:
-
-```typescript
-interface BookingFormData {
-  name: string;   // Required
-  phone: string;  // Required
-  email: string;  // Optional
-  notes: string;  // Optional
-}
-```
-
-### With Cart Button
-
-Add a cart button to the chat header. This is useful for e-commerce applications where you want users to access their cart without leaving the chat.
-
-```tsx
-import { ChatModal, CartConfig } from '@ducky777/chat-widget';
-import { CartDropdown } from './components/CartDropdown'; // Your own cart component
-
-function App() {
-  const handleCheckout = () => {
-    // Handle checkout - e.g., open checkout modal or navigate
-    router.push('/checkout');
-  };
-
-  return (
-    <ChatModal
-      apiEndpoint="/api/chat"
-      cart={{
-        enabled: true,
-        renderButton: (
-          <CartDropdown onCheckout={handleCheckout} />
-        ),
-      }}
-    />
-  );
-}
-```
-
-#### CartConfig Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable/disable the cart button |
-| `renderButton` | `React.ReactNode` | **required** | Your cart component to render in the header |
-
-The `renderButton` prop accepts any React node, allowing you to use your own cart component that integrates with your cart state management (Context, Redux, Zustand, etc.). The widget provides styling to ensure the button fits the header theme.
-
-### With Product Suggestions
-
-Display featured products within the chat widget. Products can be provided statically or fetched from an API endpoint. Useful for e-commerce applications to showcase relevant products during conversations.
+### With Full Analytics
 
 ```tsx
 <ChatModal
   apiEndpoint="/api/chat"
-  productSuggestions={{
-    enabled: true,
-    headerText: 'Recommended for You',
-    products: [
-      {
-        id: 'prod-1',
-        name: 'Baby Sleep Training eBook',
-        price: 19.99,
-        originalPrice: 29.99,  // Shows discount badge
-        image: '/images/ebook-cover.jpg',
-        slug: 'sleep-training-ebook',
-      },
-      {
-        id: 'prod-2',
-        name: 'White Noise Machine',
-        price: 49.99,
-        image: '/images/white-noise.jpg',
-        slug: 'white-noise-machine',
-      },
-    ],
-    onAddToCart: (product) => {
-      // Add product to your cart system
-      addToCart(product.id);
-      toast.success(`${product.name} added to cart!`);
-    },
-    onProductClick: (product) => {
-      // Navigate to product detail page
-      router.push(`/products/${product.slug}`);
-    },
+  analytics={{
+    onChatOpened: () => posthog.capture('chat_opened'),
+    onChatMinimized: () => posthog.capture('chat_minimized'),
+    onChatMessageSent: (message, count, sessionId, chatSessionId) =>
+      posthog.capture('chat_message_sent', { message, count, sessionId, chatSessionId }),
+    onMessageReceived: ({ responseTimeMs, messageLength }) =>
+      posthog.capture('message_received', { responseTimeMs, messageLength }),
+    onErrorOccurred: ({ error, errorType }) =>
+      posthog.capture('chat_error', { error, errorType }),
+    onConversationCompleted: ({ messageCount, sessionDurationMs }) =>
+      posthog.capture('conversation_completed', { messageCount, sessionDurationMs }),
   }}
 />
 ```
 
-#### Fetching Products from API
-
-Instead of providing static products, you can fetch them from an API endpoint:
-
-```tsx
-<ChatModal
-  apiEndpoint="/api/chat"
-  productSuggestions={{
-    enabled: true,
-    apiEndpoint: '/api/featured-products',  // Returns { products: Product[] }
-    headerText: 'Featured Products',
-    onAddToCart: (product) => addToCart(product.id),
-    onProductClick: (product) => router.push(`/products/${product.slug}`),
-  }}
-/>
-```
-
-#### ProductSuggestionsConfig Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable/disable product suggestions |
-| `products` | `Product[]` | `[]` | Static list of products to display |
-| `apiEndpoint` | `string` | `undefined` | API endpoint to fetch products (alternative to static list) |
-| `headerText` | `string` | `'Featured Products'` | Header text above the carousel |
-| `onAddToCart` | `(product: Product) => void` | `undefined` | Callback when add to cart button is clicked |
-| `onProductClick` | `(product: Product) => void` | `undefined` | Callback when product image is clicked |
-
-#### Product Type
-
-```typescript
-interface Product {
-  id: string;           // Unique product identifier
-  name: string;         // Product display name
-  price: number;        // Current price
-  originalPrice?: number; // Original price (shows discount badge if higher than price)
-  image: string;        // Product image URL
-  slug?: string;        // URL-friendly identifier for routing
-}
-```
+---
 
 ## API Contract
 
@@ -588,6 +476,8 @@ data: {"done": true}
 d:{"finishReason":"stop"}
 ```
 
+---
+
 ## Theming
 
 The component uses CSS custom properties that you can override:
@@ -597,19 +487,18 @@ The component uses CSS custom properties that you can override:
   /* WhatsApp Theme */
   --pcm-wa-primary: #008069;
   --pcm-wa-primary-light: #00a884;
-  /* ... */
 
   /* iMessage Theme */
   --pcm-im-primary: #007AFF;
   --pcm-im-primary-light: #409CFF;
-  /* ... */
 
   /* Floating Prompt Ribbon */
   --hocw-ribbon-accent: #d4c5a3;
   --hocw-ribbon-bg: rgba(30, 30, 35, 0.8);
-  /* ... */
 }
 ```
+
+---
 
 ## Development
 
@@ -617,8 +506,11 @@ The component uses CSS custom properties that you can override:
 # Install dependencies
 npm install
 
-# Build
+# Build library + CDN bundle
 npm run build
+
+# Build with PostHog key (for production CDN)
+POSTHOG_API_KEY=your_key npm run build:embed
 
 # Watch mode
 npm run dev
@@ -626,6 +518,19 @@ npm run dev
 # Type check
 npm run typecheck
 ```
+
+## CDN Hosting
+
+The CDN bundle is output to `dist/embed/v1/`:
+- `chat-widget.min.js` - Main bundle (~400KB, includes React)
+- `styles.css` - Widget styles
+
+Deploy to Vercel with subdomain `widget.haskyos.com`. The `vercel.json` configures:
+- CORS headers for cross-origin loading
+- Cache headers (1 year for versioned, 1 hour for `/latest/`)
+- Rewrites from `/v1/*` to the embed bundle
+
+---
 
 ## License
 
