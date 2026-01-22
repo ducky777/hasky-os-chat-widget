@@ -23,7 +23,9 @@ export default defineConfig([
     entry: ['src/embed/index.ts'],
     outDir: 'dist/embed',
     format: ['iife'],
-    globalName: 'ChatWidget',
+    // Don't use globalName - the embed/index.ts sets window.ChatWidget directly
+    // This avoids double-wrapping issues where globalName's assignment overwrites
+    // the explicit window.ChatWidget = ChatWidget in the code
     minify: true,
     splitting: false,
     sourcemap: false,
@@ -37,6 +39,15 @@ export default defineConfig([
         'process.env.NODE_ENV': '"production"',
         '__POSTHOG_API_KEY__': `"${process.env.POSTHOG_API_KEY || ''}"`,
       };
+      // Alias Node.js modules to browser-compatible versions
+      // These are pulled in by unified/remark ecosystem but not actually used at runtime
+      options.alias = {
+        ...options.alias,
+        path: 'path-browserify',
+        process: 'process/browser',
+      };
+      // Mark as platform browser to help esbuild resolve correctly
+      options.platform = 'browser';
     },
     onSuccess: async () => {
       // Copy and rename the embed bundle for versioned CDN
