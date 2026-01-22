@@ -28,3 +28,4 @@ coverage/
 .mcp.json
 
 .discord_attachments
+.vercel
