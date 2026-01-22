@@ -51,7 +51,12 @@ class EventBridge {
     event: K,
     handler: ChatWidgetEventHandler<ChatWidgetEventMap[K]>
   ): void {
-    this.listeners[event].add(handler as ChatWidgetEventHandler<unknown>);
+    const handlers = this.listeners[event];
+    if (!handlers) {
+      console.warn(`[ChatWidget] Unknown event type: "${event}". Valid events: ${Object.keys(this.listeners).join(', ')}`);
+      return;
+    }
+    handlers.add(handler as ChatWidgetEventHandler<unknown>);
   }
 
   /**
@@ -61,7 +66,12 @@ class EventBridge {
     event: K,
     handler: ChatWidgetEventHandler<ChatWidgetEventMap[K]>
   ): void {
-    this.listeners[event].delete(handler as ChatWidgetEventHandler<unknown>);
+    const handlers = this.listeners[event];
+    if (!handlers) {
+      console.warn(`[ChatWidget] Unknown event type: "${event}". Valid events: ${Object.keys(this.listeners).join(', ')}`);
+      return;
+    }
+    handlers.delete(handler as ChatWidgetEventHandler<unknown>);
   }
 
   /**
@@ -72,6 +82,9 @@ class EventBridge {
     data?: ChatWidgetEventMap[K]
   ): void {
     const handlers = this.listeners[event];
+    if (!handlers) {
+      return;
+    }
     handlers.forEach((handler) => {
       try {
         (handler as ChatWidgetEventHandler<ChatWidgetEventMap[K]>)(data as ChatWidgetEventMap[K]);
