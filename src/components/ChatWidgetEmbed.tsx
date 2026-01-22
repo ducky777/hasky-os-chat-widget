@@ -138,6 +138,9 @@ export interface ChatWidgetEmbedProps {
 /** Default CDN URL */
 const DEFAULT_CDN_URL = 'https://widget.haskyos.com/v1/chat-widget.min.js';
 
+/** Widget version for cache busting */
+const WIDGET_VERSION = '1.1.2';
+
 /**
  * ChatWidgetEmbed - React wrapper component that loads the CDN-hosted widget
  *
@@ -302,9 +305,9 @@ export function ChatWidgetEmbed({
     if (scriptLoaded.current) return;
     scriptLoaded.current = true;
 
-    // Load the CDN script
+    // Load the CDN script with cache-busting version
     const script = document.createElement('script');
-    script.src = cdnUrl;
+    script.src = `${cdnUrl}?v=${WIDGET_VERSION}`;
     script.async = true;
     script.onload = () => {
       initWidget();

@@ -6,7 +6,7 @@
 export const DEFAULT_API_ENDPOINT = 'https://api.haskyos.com/v1/chat';
 
 /** Widget version - should match package.json */
-export const WIDGET_VERSION = '1.0.0';
+export const WIDGET_VERSION = '1.1.2';
 
 /** Storage key prefix for embedded widget */
 export const EMBED_STORAGE_PREFIX = 'hocw_embed';

@@ -1,7 +1,10 @@
 {
   "name": "@ducky777/chat-widget",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "Phone-style chat modal component with WhatsApp and iMessage themes. Supports CDN embedding with full checkout flow.",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -59,6 +62,5 @@
     "type": "git",
     "url": "git+https://github.com/ducky777/hasky-os-chat-widget.git"
   },
-  "license": "UNLICENSED",
-  "private": true
+  "license": "UNLICENSED"
 }

@@ -6,7 +6,8 @@
    ======================================== */
 
 /* CSS Custom Properties for theming */
-:root {
+/* Use :host for Shadow DOM compatibility */
+:host {
   /* WhatsApp Theme (default) */
   --pcm-wa-primary: #008069;
   --pcm-wa-primary-light: #00a884;
