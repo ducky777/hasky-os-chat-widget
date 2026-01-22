@@ -5,6 +5,17 @@ export { AppointmentBookingModal, CalendarHeaderIcon } from './components/Appoin
 export { FeaturedProductsCarousel } from './components/FeaturedProductsCarousel';
 export { ProductSuggestionsCarousel } from './components/ProductSuggestionsCarousel';
 
+// Embed wrapper component (loads CDN widget)
+export { ChatWidgetEmbed } from './components/ChatWidgetEmbed';
+export type {
+  ChatWidgetEmbedProps,
+  PaymentConfig,
+  EmbedBookingConfig,
+  EmbedProductsConfig,
+  CheckoutResult,
+  CartState,
+} from './components/ChatWidgetEmbed';
+
 // Context & Provider
 export { ChatModalProvider, useChatModal, ChatModalContext } from './context/ChatModalContext';
 

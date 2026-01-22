@@ -1,7 +1,7 @@
 {
   "name": "@ducky777/chat-widget",
-  "version": "1.0.2",
-  "description": "Phone-style chat modal component with WhatsApp and iMessage themes",
+  "version": "1.1.0",
+  "description": "Phone-style chat modal component with WhatsApp and iMessage themes. Supports CDN embedding with full checkout flow.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -11,7 +11,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./styles": "./dist/styles.css"
+    "./styles": "./dist/styles.css",
+    "./embed": {
+      "types": "./dist/embed/index.d.ts",
+      "import": "./dist/embed/index.mjs",
+      "require": "./dist/embed/index.js"
+    }
   },
   "files": [
     "dist",
@@ -20,6 +25,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "build:embed": "POSTHOG_API_KEY=$POSTHOG_API_KEY tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build",
