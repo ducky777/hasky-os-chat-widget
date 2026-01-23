@@ -18,6 +18,7 @@ const DEFAULT_REOPEN_TEXT = "Chat with us";
 const DEFAULT_HINT_TEXT = "";
 const DEFAULT_STORE_NAME = "Chat";
 const DEFAULT_THEME: ChatStyle = 'imessage';
+const DEFAULT_MAX_MESSAGE_LENGTH = 500;
 
 const STORAGE_KEY_SUFFIX = '-minimized';
 
@@ -212,6 +213,9 @@ export function ChatModal({
 
   // Dynamic AI product suggestions configuration
   dynamicProductSuggestions,
+
+  // Input constraints
+  maxMessageLength = DEFAULT_MAX_MESSAGE_LENGTH,
 }: ChatModalProps) {
   const storageKey = `${storageKeyPrefix}${STORAGE_KEY_SUFFIX}`;
   const { pendingMessage, clearPendingMessage, isOpen: contextIsOpen } = useChatModal();
@@ -457,7 +461,7 @@ export function ChatModal({
 
   // Handle input change with typing tracking
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value.slice(0, 500);
+    const newValue = e.target.value.slice(0, maxMessageLength);
     setInputValue(newValue);
 
     // Track typing started (only once per typing session)
@@ -488,7 +492,7 @@ export function ChatModal({
       typingStartTimeRef.current = null;
       hasTrackedTypingStartRef.current = false;
     }
-  }, [storageKeyPrefix, analytics, inputValue]);
+  }, [storageKeyPrefix, analytics, inputValue, maxMessageLength]);
 
   const handleQuickReply = useCallback((text: string) => {
     const sessionId = localStorage.getItem(`${storageKeyPrefix}_session_id`) || '';
@@ -826,7 +830,7 @@ export function ChatModal({
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
                       disabled={isLoading || isStreaming}
-                      maxLength={500}
+                      maxLength={maxMessageLength}
                     />
                   </div>
                   <button

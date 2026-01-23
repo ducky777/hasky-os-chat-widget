@@ -291,6 +291,10 @@ export interface ChatModalProps {
   // Dynamic AI product suggestions
   /** Dynamic AI-suggested products configuration */
   dynamicProductSuggestions?: DynamicProductSuggestionsConfig;
+
+  // Input constraints
+  /** Maximum character limit for user messages (default: 500) */
+  maxMessageLength?: number;
 }
 
 /**
