@@ -354,15 +354,22 @@ export function ChatModal({
   }, [pathname, storageKey, minimizedByDefaultPaths, analytics]);
 
   // Close menu when clicking outside
+  // Use composedPath() to properly handle clicks within Shadow DOM
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (!menuRef.current || !menuOpen) return;
+
+      // Use composedPath() to get the actual path through Shadow DOM boundaries
+      const path = event.composedPath();
+      const clickedInsideMenu = path.some(el => el === menuRef.current);
+
+      if (!clickedInsideMenu) {
         setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [menuOpen]);
 
   // Track conversation completion (6+ messages = 3+ exchanges)
   useEffect(() => {
