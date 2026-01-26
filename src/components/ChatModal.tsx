@@ -354,33 +354,29 @@ export function ChatModal({
   }, [pathname, storageKey, minimizedByDefaultPaths, analytics]);
 
   // Close menu when clicking outside
-  // Use composedPath() to properly handle clicks within Shadow DOM
+  // Attach to shadow root for proper Shadow DOM event handling
   useEffect(() => {
-    if (!menuOpen) return; // Don't add listener if menu is closed
+    if (!menuOpen || !menuRef.current) return;
+
+    // Get the shadow root (or document if not in shadow DOM)
+    const rootNode = menuRef.current.getRootNode();
+    const eventTarget = rootNode instanceof ShadowRoot ? rootNode : document;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (!menuRef.current) return;
 
-      // Use composedPath() to get the actual path through Shadow DOM boundaries
-      const path = event.composedPath();
-
-      // Check if any element in the path is inside our menu container
+      const target = event.target as Node;
       const menuElement = menuRef.current;
-      const clickedInsideMenu = path.some(el => {
-        if (el === menuElement) return true;
-        // Also check if it's a child element of menuRef
-        if (el instanceof Node && menuElement.contains(el)) return true;
-        return false;
-      });
 
-      if (!clickedInsideMenu) {
+      // Simple contains check works within the same root
+      if (!menuElement.contains(target)) {
         setMenuOpen(false);
       }
     };
 
-    // Use capture phase to ensure we get the event before it might be stopped
-    document.addEventListener('mousedown', handleClickOutside, true);
-    return () => document.removeEventListener('mousedown', handleClickOutside, true);
+    // Use mousedown to close before click handlers fire
+    eventTarget.addEventListener('mousedown', handleClickOutside as EventListener);
+    return () => eventTarget.removeEventListener('mousedown', handleClickOutside as EventListener);
   }, [menuOpen]);
 
   // Track conversation completion (6+ messages = 3+ exchanges)
