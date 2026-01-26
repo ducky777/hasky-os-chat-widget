@@ -356,19 +356,31 @@ export function ChatModal({
   // Close menu when clicking outside
   // Use composedPath() to properly handle clicks within Shadow DOM
   useEffect(() => {
+    if (!menuOpen) return; // Don't add listener if menu is closed
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current || !menuOpen) return;
+      if (!menuRef.current) return;
 
       // Use composedPath() to get the actual path through Shadow DOM boundaries
       const path = event.composedPath();
-      const clickedInsideMenu = path.some(el => el === menuRef.current);
+
+      // Check if any element in the path is inside our menu container
+      const menuElement = menuRef.current;
+      const clickedInsideMenu = path.some(el => {
+        if (el === menuElement) return true;
+        // Also check if it's a child element of menuRef
+        if (el instanceof Node && menuElement.contains(el)) return true;
+        return false;
+      });
 
       if (!clickedInsideMenu) {
         setMenuOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    // Use capture phase to ensure we get the event before it might be stopped
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => document.removeEventListener('mousedown', handleClickOutside, true);
   }, [menuOpen]);
 
   // Track conversation completion (6+ messages = 3+ exchanges)
