@@ -387,7 +387,7 @@ async function init(widgetConfig: ChatWidgetConfig): Promise<void> {
   const sessionId = getSessionId(config.clientId);
   await initAnalytics(config.clientId, sessionId);
 
-  // Create Shadow DOM
+  // Create Shadow DOM (closed mode for production security)
   const host = createShadowHost();
   shadowRoot = host.attachShadow({ mode: 'closed' });
 
