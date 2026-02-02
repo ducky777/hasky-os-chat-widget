@@ -136,6 +136,8 @@ export function EmbedApp({ config }: EmbedAppProps) {
   // Handle add to cart from product carousels
   const handleAddToCart = useCallback((product: Product, size?: string) => {
     cartStore.addItem(product, 1, size);
+    // Emit addToCart event for host site to handle
+    eventBridge.emit('addToCart', product);
   }, []);
 
   // Handle product click - emit event for host

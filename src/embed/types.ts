@@ -163,6 +163,7 @@ export type ChatWidgetEventType =
   | 'open'
   | 'close'
   | 'minimize'
+  | 'addToCart'
   | 'cartUpdated'
   | 'checkoutStarted'
   | 'checkoutRequested'
@@ -186,6 +187,8 @@ export interface ChatWidgetEventMap {
   open: void;
   close: void;
   minimize: void;
+  /** Emitted when a product is added to cart */
+  addToCart: Product;
   cartUpdated: CartUpdateEvent;
   checkoutStarted: { items: CartItem[] };
   /** Emitted when useExternalCheckout is true and user clicks cart button */
