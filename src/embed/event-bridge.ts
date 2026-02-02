@@ -28,6 +28,7 @@ class EventBridge {
       minimize: new Set(),
       cartUpdated: new Set(),
       checkoutStarted: new Set(),
+      checkoutRequested: new Set(),
       checkoutComplete: new Set(),
       checkoutFailed: new Set(),
       bookingSubmitted: new Set(),
