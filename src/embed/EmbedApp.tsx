@@ -241,9 +241,20 @@ function EmbedCartButton({ config }: { config: ChatWidgetConfig }) {
 
   const handleCheckoutClick = () => {
     if (cartState.totalItems > 0) {
-      setIsCheckoutOpen(true);
       Analytics.checkoutStarted(cartState.totalItems, cartState.totalAmount);
-      eventBridge.emit('checkoutStarted', { items: cartState.items });
+
+      // If useExternalCheckout is enabled, emit event for host to handle
+      if (config.payment?.useExternalCheckout) {
+        eventBridge.emit('checkoutRequested', {
+          items: cartState.items,
+          totalAmount: cartState.totalAmount,
+          currency: cartState.currency,
+        });
+      } else {
+        // Use built-in checkout modal
+        setIsCheckoutOpen(true);
+        eventBridge.emit('checkoutStarted', { items: cartState.items });
+      }
     }
   };
 
@@ -273,7 +284,7 @@ function EmbedCartButton({ config }: { config: ChatWidgetConfig }) {
         )}
       </button>
 
-      {isCheckoutOpen && (
+      {isCheckoutOpen && !config.payment?.useExternalCheckout && (
         <EmbedCheckoutModal
           config={config}
           cart={cartState}

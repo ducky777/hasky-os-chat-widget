@@ -16,6 +16,13 @@ export interface PaymentConfig {
   provider: 'stripe' | 'hitpay';
   /** Publishable/public key (safe for frontend) */
   publicKey: string;
+  /**
+   * Use external checkout instead of the widget's built-in checkout modal.
+   * When true, clicking the cart button emits 'checkoutRequested' event
+   * instead of opening the built-in checkout modal.
+   * The host site should listen for this event and open their own checkout.
+   */
+  useExternalCheckout?: boolean;
 }
 
 /**
@@ -158,6 +165,7 @@ export type ChatWidgetEventType =
   | 'minimize'
   | 'cartUpdated'
   | 'checkoutStarted'
+  | 'checkoutRequested'
   | 'checkoutComplete'
   | 'checkoutFailed'
   | 'bookingSubmitted'
@@ -180,6 +188,8 @@ export interface ChatWidgetEventMap {
   minimize: void;
   cartUpdated: CartUpdateEvent;
   checkoutStarted: { items: CartItem[] };
+  /** Emitted when useExternalCheckout is true and user clicks cart button */
+  checkoutRequested: { items: CartItem[]; totalAmount: number; currency: string };
   checkoutComplete: CheckoutResult;
   checkoutFailed: { error: string; code?: string };
   bookingSubmitted: BookingSubmitEvent;
