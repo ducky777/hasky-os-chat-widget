@@ -199,7 +199,7 @@ export function EmbedApp({ config }: EmbedAppProps) {
           config.products?.enableAISuggestions && eventBridge.hasProductsCallback()
             ? {
                 enabled: true,
-                productsApiEndpoint: '', // We'll intercept this and use getProducts
+                getProducts: () => eventBridge.requestProducts(),
                 headerText: 'Recommended for you',
                 onAddToCart: handleAddToCart,
                 onProductClick: handleProductClick,

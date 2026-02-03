@@ -155,9 +155,17 @@ export function ProductSuggestionsCarousel({
 
     async function fetchProducts() {
       try {
-        const res = await fetch(config.productsApiEndpoint);
-        const data = await res.json();
-        const allProducts: Product[] = data.products || data || [];
+        let allProducts: Product[] = [];
+
+        // Prefer getProducts callback over API endpoint
+        if (config.getProducts) {
+          const products = await config.getProducts();
+          allProducts = products || [];
+        } else if (config.productsApiEndpoint) {
+          const res = await fetch(config.productsApiEndpoint);
+          const data = await res.json();
+          allProducts = data.products || data || [];
+        }
 
         const resolved = suggestions
           .map(s => {
@@ -175,7 +183,7 @@ export function ProductSuggestionsCarousel({
       }
     }
     fetchProducts();
-  }, [suggestions, config.productsApiEndpoint]);
+  }, [suggestions, config.productsApiEndpoint, config.getProducts]);
 
   if (loading || resolvedProducts.length === 0) return null;
 

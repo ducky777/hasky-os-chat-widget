@@ -52,8 +52,10 @@ export interface ProductSuggestionsConfig {
 export interface DynamicProductSuggestionsConfig {
   /** Enable dynamic AI product suggestions */
   enabled?: boolean;
-  /** API endpoint to fetch all products (for resolving productIds) */
-  productsApiEndpoint: string;
+  /** API endpoint to fetch all products (for resolving productIds) - used if getProducts not provided */
+  productsApiEndpoint?: string;
+  /** Function to retrieve products (preferred over productsApiEndpoint) */
+  getProducts?: () => Promise<Product[]> | Product[];
   /** Header text for the AI suggestions section */
   headerText?: string;
   /** Called when a product is added to cart */
