@@ -1,6 +1,10 @@
 /**
  * PostHog analytics integration for embedded widget
  * Tracks all client widget usage with client segregation
+ *
+ * If the host site already has PostHog initialized (window.posthog exists),
+ * the widget will use the existing instance instead of loading its own.
+ * This ensures all events (site + widget) flow through the same session.
  */
 
 import { POSTHOG_API_KEY, POSTHOG_HOST } from './constants';
@@ -11,6 +15,7 @@ interface PostHogInstance {
   group: (type: string, key: string, properties?: Record<string, unknown>) => void;
   capture: (event: string, properties?: Record<string, unknown>) => void;
   reset: () => void;
+  get_distinct_id?: () => string;
 }
 
 declare global {
@@ -20,11 +25,19 @@ declare global {
 }
 
 let isInitialized = false;
+let usingHostPostHog = false;
 let clientId: string | null = null;
 let sessionId: string | null = null;
 
 /**
- * Load PostHog script dynamically
+ * Check if PostHog is already initialized by the host site
+ */
+function isPostHogAlreadyInitialized(): boolean {
+  return !!(window.posthog && typeof window.posthog.capture === 'function');
+}
+
+/**
+ * Load PostHog script dynamically (only if not already present)
  */
 function loadPostHogScript(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -44,22 +57,43 @@ function loadPostHogScript(): Promise<void> {
 
 /**
  * Initialize PostHog with client segregation
+ *
+ * If window.posthog already exists (host site installed PostHog),
+ * we'll use that instance and just add widget context to events.
+ * This means all tracking flows through the same PostHog session.
  */
 export async function initAnalytics(
   widgetClientId: string,
   widgetSessionId: string
 ): Promise<void> {
-  if (!POSTHOG_API_KEY) {
-    console.warn('[ChatWidget] PostHog API key not configured');
-    return;
-  }
-
   if (isInitialized) {
     return;
   }
 
   clientId = widgetClientId;
   sessionId = widgetSessionId;
+
+  // Check if host site already has PostHog initialized
+  if (isPostHogAlreadyInitialized()) {
+    console.log('[ChatWidget] Using existing PostHog instance from host site');
+    usingHostPostHog = true;
+    isInitialized = true;
+
+    // Add widget context to the existing session
+    window.posthog?.group('widget_client', clientId!, {
+      domain: window.location.hostname,
+      widget_session_id: sessionId,
+      first_seen: new Date().toISOString(),
+    });
+
+    return;
+  }
+
+  // No existing PostHog - load our own if we have an API key
+  if (!POSTHOG_API_KEY) {
+    console.warn('[ChatWidget] PostHog API key not configured and no host PostHog found');
+    return;
+  }
 
   try {
     await loadPostHogScript();
@@ -95,6 +129,27 @@ export async function initAnalytics(
   } catch (error) {
     console.warn('[ChatWidget] Failed to initialize analytics:', error);
   }
+}
+
+/**
+ * Check if we're using the host site's PostHog instance
+ */
+export function isUsingHostPostHog(): boolean {
+  return usingHostPostHog;
+}
+
+/**
+ * Get the current session ID (useful for host sites to link their events)
+ */
+export function getSessionId(): string | null {
+  return sessionId;
+}
+
+/**
+ * Get the current client ID
+ */
+export function getClientId(): string | null {
+  return clientId;
 }
 
 /**

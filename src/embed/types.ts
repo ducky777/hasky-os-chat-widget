@@ -243,6 +243,34 @@ export interface ChatWidgetAPI {
 
   /** Get widget version */
   version: string;
+
+  /**
+   * Track a custom event through the widget's analytics.
+   * If the host site has PostHog installed, events flow through that instance.
+   * Event names are prefixed with "site_" to distinguish from widget events.
+   *
+   * @param event - Event name (e.g., 'page_view', 'add_to_cart', 'purchase')
+   * @param properties - Optional event properties
+   */
+  track: (event: string, properties?: Record<string, unknown>) => void;
+
+  /**
+   * Get the current session ID for linking external tracking systems.
+   * @returns The session ID or null if not initialized
+   */
+  getSessionId: () => string | null;
+
+  /**
+   * Get the current client ID.
+   * @returns The client ID or null if not initialized
+   */
+  getClientId: () => string | null;
+
+  /**
+   * Check if the widget is using the host site's PostHog instance.
+   * @returns true if using host's PostHog, false if using widget's own instance
+   */
+  isUsingHostPostHog: () => boolean;
 }
 
 /**

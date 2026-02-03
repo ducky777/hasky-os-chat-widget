@@ -8,7 +8,7 @@ import { createRoot, Root } from 'react-dom/client';
 import { EmbedApp } from './EmbedApp';
 import { eventBridge } from './event-bridge';
 import { cartStore } from './cart-store';
-import { initAnalytics, Analytics } from './analytics';
+import { initAnalytics, Analytics, trackEvent, getSessionId, getClientId, isUsingHostPostHog } from './analytics';
 import type {
   ChatWidgetAPI,
   ChatWidgetConfig,
@@ -521,6 +521,46 @@ const ChatWidget: ChatWidgetAPI = {
   isInitialized: () => isInitialized,
 
   version: WIDGET_VERSION,
+
+  /**
+   * Track a custom event through the widget's analytics.
+   * If the host site has PostHog installed, events flow through that instance.
+   * This allows the host site to track page views, add-to-cart, etc.
+   * under the same session as widget interactions.
+   *
+   * @param event - Event name (will be prefixed with "site_" to distinguish from widget events)
+   * @param properties - Optional event properties
+   *
+   * @example
+   * ChatWidget.track('page_view', { page: '/products', referrer: document.referrer });
+   * ChatWidget.track('add_to_cart', { product_id: 'abc', price: 19.99 });
+   * ChatWidget.track('purchase', { order_id: '123', total: 99.99 });
+   */
+  track: (event: string, properties?: Record<string, unknown>) => {
+    trackEvent(`site_${event}`, properties);
+  },
+
+  /**
+   * Get the current session ID.
+   * This can be used to link external tracking systems to the widget's session.
+   *
+   * @returns The session ID or null if not initialized
+   */
+  getSessionId: () => getSessionId(),
+
+  /**
+   * Get the current client ID.
+   *
+   * @returns The client ID or null if not initialized
+   */
+  getClientId: () => getClientId(),
+
+  /**
+   * Check if the widget is using the host site's PostHog instance.
+   *
+   * @returns true if using host's PostHog, false if using widget's own instance
+   */
+  isUsingHostPostHog: () => isUsingHostPostHog(),
 };
 
 // Expose to window
