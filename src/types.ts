@@ -250,10 +250,14 @@ export interface ChatModalProps {
   /** Hint text shown below input */
   hintText?: string;
 
+  // Initial state
+  /** Whether to start minimized by default (default: false = starts open) */
+  startMinimized?: boolean;
+
   // Path-based behavior (for Next.js/React Router)
   /** Paths where modal is completely hidden */
   hiddenPaths?: string[];
-  /** Paths where modal starts minimized */
+  /** Paths where modal starts minimized (overrides startMinimized) */
   minimizedByDefaultPaths?: string[];
   /** Paths where reopen button is hidden */
   hideReopenButtonPaths?: string[];

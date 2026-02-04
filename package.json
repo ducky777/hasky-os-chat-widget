@@ -1,6 +1,6 @@
 {
   "name": "@ducky777/chat-widget",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Phone-style chat modal component with WhatsApp and iMessage themes. Supports CDN embedding with full checkout flow.",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

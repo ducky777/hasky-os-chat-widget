@@ -19,6 +19,40 @@ import {
   EMBED_STORAGE_PREFIX,
 } from './constants';
 
+// Hook to get current pathname and listen for changes
+function usePathname(): string {
+  const [pathname, setPathname] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname : ''
+  );
+
+  useEffect(() => {
+    const handlePopState = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    // Also listen for pushState/replaceState (for SPA navigation)
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(...args) {
+      originalPushState.apply(this, args);
+      setPathname(window.location.pathname);
+    };
+
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(this, args);
+      setPathname(window.location.pathname);
+    };
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
+  }, []);
+
+  return pathname;
+}
+
 interface EmbedAppProps {
   config: ChatWidgetConfig;
 }
@@ -29,6 +63,7 @@ interface EmbedAppProps {
  */
 export function EmbedApp({ config }: EmbedAppProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const pathname = usePathname();
 
   // Load products from host callback on mount
   useEffect(() => {
@@ -171,6 +206,11 @@ export function EmbedApp({ config }: EmbedAppProps) {
         placeholder={config.placeholder || DEFAULT_PLACEHOLDER}
         quickReplies={config.quickReplies}
         reopenButtonText={config.reopenButtonText || DEFAULT_REOPEN_TEXT}
+
+        // Initial state & path-based behavior
+        startMinimized={config.startMinimized}
+        pathname={pathname}
+        minimizedByDefaultPaths={config.minimizedByDefaultPaths}
 
         // Storage - use client-specific prefix
         storageKeyPrefix={`${EMBED_STORAGE_PREFIX}_${config.clientId}`}

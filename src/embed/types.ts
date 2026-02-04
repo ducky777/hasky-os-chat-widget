@@ -139,6 +139,22 @@ export interface ChatWidgetConfig {
   /** Text on reopen button when minimized */
   reopenButtonText?: string;
 
+  // Initial state
+  /**
+   * Whether the widget should start minimized (showing only the floating button).
+   * Default is false (widget starts maximized/open).
+   * User's preference is remembered in localStorage after they interact.
+   */
+  startMinimized?: boolean;
+
+  /**
+   * Paths where the widget should start minimized by default.
+   * Uses startsWith matching, so '/products' matches '/products/anything'.
+   * This overrides startMinimized for specific paths.
+   * Users can still open the widget manually; their preference is remembered.
+   */
+  minimizedByDefaultPaths?: string[];
+
   // Features
   /** Booking calendar configuration */
   booking?: EmbedBookingConfig;

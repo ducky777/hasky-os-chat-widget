@@ -184,6 +184,9 @@ export function ChatModal({
   reopenButtonText = DEFAULT_REOPEN_TEXT,
   hintText = DEFAULT_HINT_TEXT,
 
+  // Initial state
+  startMinimized = false,
+
   // Path-based behavior
   hiddenPaths = [],
   minimizedByDefaultPaths = [],
@@ -334,7 +337,9 @@ export function ChatModal({
   // Hydrate from localStorage on mount and track initial chat view
   useEffect(() => {
     const stored = localStorage.getItem(storageKey);
-    const shouldStartMinimized = minimizedByDefaultPaths.some((path) => pathname.startsWith(path));
+    const pathRequiresMinimized = minimizedByDefaultPaths.some((path) => pathname.startsWith(path));
+    // Start minimized if: global startMinimized is true, OR current path is in minimizedByDefaultPaths
+    const shouldStartMinimized = startMinimized || pathRequiresMinimized;
 
     if (stored === 'true') {
       // User explicitly minimized - stay minimized
@@ -344,14 +349,14 @@ export function ChatModal({
       setIsModalOpen(true);
       analytics?.onChatOpened?.();
     } else if (shouldStartMinimized) {
-      // No preference stored and on a minimized-by-default path - start minimized
+      // No preference stored and should start minimized - start minimized
       setIsModalOpen(false);
     } else {
-      // No preference stored and on normal path - start open (default behavior)
+      // No preference stored and should start open - start open (default behavior)
       analytics?.onChatOpened?.();
     }
     setIsHydrated(true);
-  }, [pathname, storageKey, minimizedByDefaultPaths, analytics]);
+  }, [pathname, storageKey, startMinimized, minimizedByDefaultPaths, analytics]);
 
   // Close menu when clicking outside
   // Attach to shadow root for proper Shadow DOM event handling
