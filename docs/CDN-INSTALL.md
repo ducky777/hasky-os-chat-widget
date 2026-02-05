@@ -35,6 +35,15 @@ That's it! The widget appears in the bottom-right corner of your page.
     // Chat API endpoint (provided by Hasky)
     apiEndpoint: 'https://api.haskyos.com/v1/chat',
 
+    // Content customization
+    welcomeMessage: 'Hi there! How can we help?',
+    placeholder: 'Ask us anything...',
+    reopenButtonText: 'Need help?',
+
+    // Initial state
+    startMinimized: false,
+    minimizedByDefaultPaths: ['/checkout', '/cart'],
+
     // Enable product catalog
     products: {
       enabled: true
@@ -77,6 +86,11 @@ That's it! The widget appears in the bottom-right corner of your page.
 | `theme` | `'whatsapp'` \| `'imessage'` | `'whatsapp'` | Chat UI theme |
 | `storeName` | `string` | `'Store'` | Name displayed in chat header |
 | `apiEndpoint` | `string` | `'https://api.haskyos.com/v1/chat'` | Chat API endpoint |
+| `welcomeMessage` | `string` | `'Hello! How can I help you today?'` | Initial welcome message |
+| `placeholder` | `string` | `'Type a message...'` | Input placeholder text |
+| `reopenButtonText` | `string` | `'Chat with us'` | Text on floating button when minimized |
+| `startMinimized` | `boolean` | `false` | Start widget minimized (showing only floating button) |
+| `minimizedByDefaultPaths` | `string[]` | `[]` | Paths where widget starts minimized by default |
 | `products.enabled` | `boolean` | `false` | Enable product catalog |
 | `booking.enabled` | `boolean` | `false` | Enable booking calendar |
 | `payment.provider` | `'stripe'` \| `'hitpay'` | - | Payment provider |
